@@ -3,19 +3,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── AI-Inspired Global Color Palette ─────────────────────────────
+   Primary:   #6C63FF  (AI Violet — رمز الذكاء والإبداع)
+   Secondary: #00F5FF  (Neon Cyan — مستقبلي وتقني)
+   Accent:    #FF6BFF  (AI Magenta — طاقة وابتكار)
+   Success:   #00E5A0  (Emerald AI — نمو وأمان)
+   Warning:   #FFB800  (Gold AI — قيمة وأهمية)
+   Dark bg:   #07080F  (Deep Space)
+   Card bg:   #0E0F1E  (Dark Card)
+   Border:    #6C63FF22
+──────────────────────────────────────────────────────────────── */
+
+:root {
+  --ai-violet:   #6C63FF;
+  --ai-cyan:     #00F5FF;
+  --ai-magenta:  #FF6BFF;
+  --ai-emerald:  #00E5A0;
+  --ai-gold:     #FFB800;
+  --bg-deep:     #07080F;
+  --bg-card:     #0E0F1E;
+  --bg-card2:    #13142A;
+  --text-main:   #E8EAF6;
+  --text-muted:  #8892B0;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: 'Tajawal', sans-serif;
-  background: #0A0F2E;
-  color: #E8EAF6;
+  background: var(--bg-deep);
+  color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse at 20% 10%, #6C63FF08 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, #00F5FF06 0%, transparent 50%);
+  min-height: 100vh;
 }
 
+/* Scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #0A0F2E; }
-::-webkit-scrollbar-thumb { background: #1A2F8A; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #00D4FF55; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: #6C63FF55; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #00F5FF66; }
 
-input[type="date"], input[type="datetime-local"] { color-scheme: dark; }
+input[type="date"],
+input[type="datetime-local"] { color-scheme: dark; }
+
+/* AI Glow effects */
+.ai-glow-violet { box-shadow: 0 0 20px #6C63FF33; }
+.ai-glow-cyan   { box-shadow: 0 0 20px #00F5FF33; }
+.ai-glow-magenta{ box-shadow: 0 0 20px #FF6BFF33; }
+
+/* Animated gradient border */
+@keyframes borderPulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}

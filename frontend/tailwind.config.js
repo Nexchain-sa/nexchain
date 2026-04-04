@@ -4,13 +4,38 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        navy:   { DEFAULT: '#0D1B5E', light: '#1A2F8A', dark: '#0A0F2E' },
-        cyan:   { DEFAULT: '#00D4FF', light: '#33DDFF', dark: '#0097B2' },
-        purple: { DEFAULT: '#7B2FFF', light: '#9B5FFF', dark: '#5A1FCC' },
-        nxgreen:{ DEFAULT: '#00C853', light: '#00E676', dark: '#00952F' },
+        // AI-Inspired Palette
+        ai: {
+          violet:  '#6C63FF',   // الذكاء والإبداع
+          cyan:    '#00F5FF',   // مستقبلي وتقني
+          magenta: '#FF6BFF',   // طاقة وابتكار
+          emerald: '#00E5A0',   // نمو وأمان
+          gold:    '#FFB800',   // قيمة وأهمية
+        },
+        bg: {
+          deep:  '#07080F',     // خلفية رئيسية
+          card:  '#0E0F1E',     // بطاقات
+          card2: '#13142A',     // بطاقات ثانوية
+        },
+        // Legacy support
+        navy:    { DEFAULT: '#0E0F1E', light: '#13142A', dark: '#07080F' },
+        cyan:    { DEFAULT: '#00F5FF', light: '#33F8FF', dark: '#00B8CC' },
+        purple:  { DEFAULT: '#6C63FF', light: '#9B94FF', dark: '#4A43CC' },
+        nxgreen: { DEFAULT: '#00E5A0', light: '#33EBB5', dark: '#00A873' },
       },
       fontFamily: {
         arabic: ['Tajawal', 'sans-serif'],
+      },
+      backgroundImage: {
+        'ai-gradient':  'linear-gradient(135deg, #6C63FF, #00F5FF)',
+        'ai-gradient2': 'linear-gradient(135deg, #FF6BFF, #6C63FF)',
+        'ai-gradient3': 'linear-gradient(135deg, #00E5A0, #00F5FF)',
+      },
+      boxShadow: {
+        'ai-violet':  '0 0 20px #6C63FF33',
+        'ai-cyan':    '0 0 20px #00F5FF33',
+        'ai-magenta': '0 0 20px #FF6BFF33',
+        'ai-emerald': '0 0 20px #00E5A033',
       },
     },
   },

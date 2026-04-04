@@ -32,7 +32,7 @@ const autoSetup = async () => {
           email VARCHAR(200) UNIQUE NOT NULL,
           password VARCHAR(255) NOT NULL,
           phone VARCHAR(30),
-          role VARCHAR(20) NOT NULL CHECK (role IN ('buyer','supplier','admin','investor')),
+          role VARCHAR(20) NOT NULL CHECK (role IN ('buyer','supplier','admin','investor','owner')),
           company_name VARCHAR(200),
           company_cr VARCHAR(50),
           logo_url VARCHAR(500),
@@ -218,15 +218,20 @@ const autoSetup = async () => {
       console.log('✅ Tables exist — ensuring demo accounts...');
     }
 
-    // Always ensure demo accounts exist (safe with ON CONFLICT DO NOTHING)
+    // Always ensure all accounts exist (safe with ON CONFLICT DO NOTHING)
     const bcrypt = require('bcryptjs');
+    const ownerHash = await bcrypt.hash('Owner@Flowriz2025', 12);
     const adminHash = await bcrypt.hash('Admin@123456', 12);
     const buyerHash = await bcrypt.hash('Buyer@123456', 12);
     const supHash   = await bcrypt.hash('Supplier@123456', 12);
+    // Add owner role support via ALTER TABLE
+    await client.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('buyer','supplier','admin','investor','owner'))`).catch(()=>{});
+    await client.query(`INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved) VALUES('مالك المنصة','owner@FLOWRIZ.sa',$1,'owner','FLOWRIZ Platform',true,true) ON CONFLICT(email) DO NOTHING`, [ownerHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved) VALUES('مدير النظام','admin@FLOWRIZ.sa',$1,'admin','FLOWRIZ Platform',true,true) ON CONFLICT(email) DO NOTHING`, [adminHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('شركة الرياض للتقنية','buyer@demo.com',$1,'buyer','شركة الرياض للتقنية','+966501234567','الرياض',true,true) ON CONFLICT(email) DO NOTHING`, [buyerHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('مؤسسة النخبة للتوريد','supplier@demo.com',$1,'supplier','مؤسسة النخبة للتوريد','+966509876543','جدة',true,true) ON CONFLICT(email) DO NOTHING`, [supHash]);
-    console.log('✅ Demo accounts ready!');
+    console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {
     console.error('❌ Auto-setup error:', err.message);
