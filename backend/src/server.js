@@ -215,8 +215,19 @@ const autoSetup = async () => {
       await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('مؤسسة النخبة للتوريد','supplier@demo.com',$1,'supplier','مؤسسة النخبة للتوريد','+966509876543','جدة',true,true) ON CONFLICT(email) DO NOTHING`, [supHash]);
       console.log('✅ Seed complete — FLOWRIZ is ready!');
     } else {
-      console.log('✅ Database already initialized');
+      console.log('✅ Tables exist — ensuring demo accounts...');
     }
+
+    // Always ensure demo accounts exist (safe with ON CONFLICT DO NOTHING)
+    const bcrypt = require('bcryptjs');
+    const adminHash = await bcrypt.hash('Admin@123456', 12);
+    const buyerHash = await bcrypt.hash('Buyer@123456', 12);
+    const supHash   = await bcrypt.hash('Supplier@123456', 12);
+    await client.query(`INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved) VALUES('مدير النظام','admin@FLOWRIZ.sa',$1,'admin','FLOWRIZ Platform',true,true) ON CONFLICT(email) DO NOTHING`, [adminHash]);
+    await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('شركة الرياض للتقنية','buyer@demo.com',$1,'buyer','شركة الرياض للتقنية','+966501234567','الرياض',true,true) ON CONFLICT(email) DO NOTHING`, [buyerHash]);
+    await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('مؤسسة النخبة للتوريد','supplier@demo.com',$1,'supplier','مؤسسة النخبة للتوريد','+966509876543','جدة',true,true) ON CONFLICT(email) DO NOTHING`, [supHash]);
+    console.log('✅ Demo accounts ready!');
+
   } catch (err) {
     console.error('❌ Auto-setup error:', err.message);
   } finally {
