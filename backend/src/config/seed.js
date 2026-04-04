@@ -32,7 +32,7 @@ const seed = async () => {
       INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved)
       VALUES($1,$2,$3,'admin',$4,true,true)
       ON CONFLICT(email) DO NOTHING
-    `, ['مدير النظام', 'admin@nexchain.sa', hash, 'NexChain Platform']);
+    `, ['مدير النظام', 'admin@FLOWRIZ.sa', hash, 'FLOWRIZ Platform']);
 
     // Demo buyer
     const buyerHash = await bcrypt.hash('Buyer@123456', 12);
@@ -52,7 +52,7 @@ const seed = async () => {
 
     await client.query('COMMIT');
     console.log('✅ Seed data inserted!');
-    console.log('👤 Admin:    admin@nexchain.sa    / Admin@123456');
+    console.log('👤 Admin:    admin@FLOWRIZ.sa    / Admin@123456');
     console.log('🛒 Buyer:    buyer@demo.com       / Buyer@123456');
     console.log('📦 Supplier: supplier@demo.com    / Supplier@123456');
   } catch (err) {

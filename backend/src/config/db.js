@@ -9,8 +9,8 @@ const poolConfig = process.env.DATABASE_URL
   : {
       host:     process.env.DB_HOST     || 'localhost',
       port:     process.env.DB_PORT     || 5432,
-      database: process.env.DB_NAME     || 'nexchain_db',
-      user:     process.env.DB_USER     || 'nexchain_user',
+      database: process.env.DB_NAME     || 'FLOWRIZ_db',
+      user:     process.env.DB_USER     || 'FLOWRIZ_user',
       password: process.env.DB_PASSWORD || '',
     };
 

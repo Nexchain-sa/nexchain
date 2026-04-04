@@ -51,7 +51,7 @@ export default function Layout() {
         {/* Logo */}
         <div className="flex items-center gap-3 p-4 border-b border-[#00D4FF22] h-16">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#00D4FF] to-[#7B2FFF] flex items-center justify-center font-bold text-[#0A0F2E] text-lg flex-shrink-0">⬡</div>
-          {open && <span className="text-[#00D4FF] font-bold text-xl tracking-wide">NexChain</span>}
+          {open && <span className="text-[#00D4FF] font-bold text-xl tracking-wide">FLOWRIZ</span>}
           <button onClick={() => setOpen(!open)} className="mr-auto text-[#90A4AE] hover:text-white">
             {open ? <X size={18}/> : <Menu size={18}/>}
           </button>

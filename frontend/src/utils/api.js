@@ -7,7 +7,7 @@ const API = axios.create({
 
 // Attach token to every request
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('nx_token');
+  const token = localStorage.getItem('fl_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -17,8 +17,8 @@ API.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('nx_token');
-      localStorage.removeItem('nx_user');
+      localStorage.removeItem('fl_token');
+      localStorage.removeItem('fl_user');
       window.location.href = '/login';
     }
     return Promise.reject(err);

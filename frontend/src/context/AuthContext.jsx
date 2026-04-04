@@ -4,15 +4,15 @@ import { authAPI } from '../utils/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user,    setUser]    = useState(() => JSON.parse(localStorage.getItem('nx_user') || 'null'));
+  const [user,    setUser]    = useState(() => JSON.parse(localStorage.getItem('fl_user') || 'null'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('nx_token');
+    const token = localStorage.getItem('fl_token');
     if (token) {
       authAPI.me()
-        .then(({ data }) => { setUser(data.user); localStorage.setItem('nx_user', JSON.stringify(data.user)); })
-        .catch(() => { localStorage.removeItem('nx_token'); localStorage.removeItem('nx_user'); setUser(null); })
+        .then(({ data }) => { setUser(data.user); localStorage.setItem('fl_user', JSON.stringify(data.user)); })
+        .catch(() => { localStorage.removeItem('fl_token'); localStorage.removeItem('fl_user'); setUser(null); })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -21,21 +21,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });
-    localStorage.setItem('nx_token', data.token);
-    localStorage.setItem('nx_user', JSON.stringify(data.user));
+    localStorage.setItem('fl_token', data.token);
+    localStorage.setItem('fl_user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   };
 
   const logout = () => {
-    localStorage.removeItem('nx_token');
-    localStorage.removeItem('nx_user');
+    localStorage.removeItem('fl_token');
+    localStorage.removeItem('fl_user');
     setUser(null);
   };
 
   const updateUser = (u) => {
     setUser(u);
-    localStorage.setItem('nx_user', JSON.stringify(u));
+    localStorage.setItem('fl_user', JSON.stringify(u));
   };
 
   return (

@@ -34,7 +34,7 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#7B2FFF] text-3xl text-[#0A0F2E] font-bold shadow-lg shadow-cyan-500/30 mb-4">⬡</div>
-          <h1 className="text-3xl font-bold text-white">NexChain</h1>
+          <h1 className="text-3xl font-bold text-white">FLOWRIZ</h1>
           <p className="text-[#90A4AE] mt-1">منصة سلاسل الإمداد الذكية</p>
         </div>
 
@@ -65,7 +65,7 @@ export default function Login() {
           <div className="mt-6 p-4 rounded-xl bg-[#0A0F2E] border border-[#00D4FF11]">
             <p className="text-xs text-[#90A4AE] mb-2 font-bold">حسابات تجريبية:</p>
             {[
-              {label:'مدير',   email:'admin@nexchain.sa',  pass:'Admin@123456'},
+              {label:'مدير',   email:'admin@FLOWRIZ.sa',  pass:'Admin@123456'},
               {label:'مشترٍ',  email:'buyer@demo.com',     pass:'Buyer@123456'},
               {label:'مورد',   email:'supplier@demo.com',  pass:'Supplier@123456'},
             ].map(a => (

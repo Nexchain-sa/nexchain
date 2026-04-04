@@ -42,7 +42,7 @@ export default function Register() {
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#7B2FFF] text-2xl text-[#0A0F2E] font-bold shadow-lg mb-3">⬡</div>
           <h1 className="text-2xl font-bold text-white">إنشاء حساب جديد</h1>
-          <p className="text-[#90A4AE] text-sm mt-1">انضم إلى منصة NexChain</p>
+          <p className="text-[#90A4AE] text-sm mt-1">انضم إلى منصة FLOWRIZ</p>
         </div>
 
         <div className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-6 shadow-2xl">

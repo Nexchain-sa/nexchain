@@ -1,8 +1,8 @@
-# ⬡ NexChain — منصة سلاسل الإمداد الذكية
+# ⬡ FLOWRIZ — منصة سلاسل الإمداد الذكية
 
 ## هيكل المشروع
 ```
-nexchain/
+FLOWRIZ/
 ├── backend/          ← Node.js + Express API
 │   ├── src/
 │   │   ├── server.js         ← نقطة البداية
@@ -55,11 +55,11 @@ nexchain/
 
 ```sql
 -- افتح psql وأنشئ قاعدة البيانات والمستخدم:
-CREATE DATABASE nexchain_db;
-CREATE USER nexchain_user WITH PASSWORD 'your_strong_password';
-GRANT ALL PRIVILEGES ON DATABASE nexchain_db TO nexchain_user;
-\c nexchain_db
-GRANT ALL ON SCHEMA public TO nexchain_user;
+CREATE DATABASE FLOWRIZ_db;
+CREATE USER FLOWRIZ_user WITH PASSWORD 'your_strong_password';
+GRANT ALL PRIVILEGES ON DATABASE FLOWRIZ_db TO FLOWRIZ_user;
+\c FLOWRIZ_db
+GRANT ALL ON SCHEMA public TO FLOWRIZ_user;
 ```
 
 ---
@@ -67,15 +67,15 @@ GRANT ALL ON SCHEMA public TO nexchain_user;
 ### 2️⃣ إعداد Backend
 
 ```bash
-cd nexchain/backend
+cd FLOWRIZ/backend
 
 # نسخ ملف البيئة
 cp .env.example .env
 
 # عدّل .env بقيمك الحقيقية:
 # DB_HOST=localhost
-# DB_NAME=nexchain_db
-# DB_USER=nexchain_user
+# DB_NAME=FLOWRIZ_db
+# DB_USER=FLOWRIZ_user
 # DB_PASSWORD=your_strong_password
 # JWT_SECRET=minimum_32_chars_secret_key
 
@@ -98,7 +98,7 @@ npm run dev
 ### 3️⃣ إعداد Frontend
 
 ```bash
-cd nexchain/frontend
+cd FLOWRIZ/frontend
 
 # إنشاء ملف البيئة
 echo "REACT_APP_API_URL=http://localhost:5000/api" > .env
@@ -117,7 +117,7 @@ npm start
 
 | الدور | البريد | كلمة المرور |
 |-------|--------|-------------|
-| مدير النظام | admin@nexchain.sa | Admin@123456 |
+| مدير النظام | admin@FLOWRIZ.sa | Admin@123456 |
 | مشترٍ | buyer@demo.com | Buyer@123456 |
 | مورد | supplier@demo.com | Supplier@123456 |
 
@@ -164,14 +164,14 @@ npm start
 ### خيار A — مجاني (Render.com)
 ```bash
 # Backend على Render:
-# 1. ارفع nexchain/backend على GitHub
+# 1. ارفع FLOWRIZ/backend على GitHub
 # 2. أنشئ Web Service على render.com
 # 3. أضف متغيرات البيئة
 # 4. Build Command: npm install
 # 5. Start Command: node src/server.js
 
 # Frontend على Netlify:
-# 1. ارفع nexchain/frontend على GitHub
+# 1. ارفع FLOWRIZ/frontend على GitHub
 # 2. أنشئ موقع على netlify.com
 # 3. Build: npm run build | Publish: build/
 # 4. أضف: REACT_APP_API_URL=https://your-backend.onrender.com/api
@@ -183,23 +183,23 @@ npm start
 sudo apt update && sudo apt install -y nodejs npm postgresql nginx
 
 # PostgreSQL setup
-sudo -u postgres psql -c "CREATE DATABASE nexchain_db;"
-sudo -u postgres psql -c "CREATE USER nexchain_user WITH PASSWORD 'StrongPass123';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE nexchain_db TO nexchain_user;"
+sudo -u postgres psql -c "CREATE DATABASE FLOWRIZ_db;"
+sudo -u postgres psql -c "CREATE USER FLOWRIZ_user WITH PASSWORD 'StrongPass123';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE FLOWRIZ_db TO FLOWRIZ_user;"
 
 # Backend
-cd /var/www/nexchain/backend
+cd /var/www/FLOWRIZ/backend
 npm install && npm run db:migrate && npm run db:seed
 npm install -g pm2
-pm2 start src/server.js --name nexchain-api
+pm2 start src/server.js --name FLOWRIZ-api
 pm2 startup && pm2 save
 
 # Frontend
-cd /var/www/nexchain/frontend
+cd /var/www/FLOWRIZ/frontend
 npm install && npm run build
 
 # Nginx config
-# server { listen 80; location /api { proxy_pass http://localhost:5000; } location / { root /var/www/nexchain/frontend/build; try_files $uri /index.html; } }
+# server { listen 80; location /api { proxy_pass http://localhost:5000; } location / { root /var/www/FLOWRIZ/frontend/build; try_files $uri /index.html; } }
 ```
 
 ---
