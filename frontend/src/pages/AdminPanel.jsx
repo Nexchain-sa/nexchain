@@ -1,10 +1,12 @@
 // AdminPanel.jsx
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../utils/api';
-import { Users, CheckCircle, XCircle } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 export function AdminPanel() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers]   = useState([]);
   const [loading, setL]     = useState(true);
   const [filter, setFilter] = useState('all');
@@ -22,79 +24,118 @@ export function AdminPanel() {
     } catch { toast.error('خطأ'); }
   };
 
-  const roleLabel = { buyer:'مشترٍ', supplier:'مورد', investor:'مستثمر', admin:'مدير' };
-  const roleColor = { buyer:'#00D4FF', supplier:'#7B2FFF', investor:'#00C853', admin:'#FF6B35' };
+  const roleLabel = { buyer:'مشترٍ', supplier:'مورد', investor:'مستثمر', admin:'مدير', owner:'مالك المنصة' };
+  const roleColor = { buyer:'#00F5FF', supplier:'#00E5A0', investor:'#FFB800', admin:'#6C63FF', owner:'#FF6BFF' };
 
   const filtered = filter==='all' ? users : users.filter(u=>
     filter==='pending' ? !u.is_approved : u.role===filter
   );
 
+  const isOwner = currentUser?.role === 'owner';
+
   return (
     <div className="font-arabic space-y-5" dir="rtl">
-      <h1 className="text-xl font-bold text-white flex items-center gap-2"><Users size={20} className="text-[#FF6B35]"/> لوحة إدارة المستخدمين</h1>
+      <h1 className="text-xl font-bold text-white flex items-center gap-2">
+        {isOwner
+          ? <Crown size={20} style={{ color:'#FF6BFF' }}/>
+          : <Users size={20} style={{ color:'#6C63FF' }}/>
+        }
+        {isOwner ? 'لوحة مالك المنصة' : 'لوحة إدارة المستخدمين'}
+      </h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          {l:'إجمالي المستخدمين', v:users.length, c:'#00D4FF'},
-          {l:'بانتظار الاعتماد', v:users.filter(u=>!u.is_approved&&u.role!=='admin').length, c:'#FF6B35'},
-          {l:'موردون', v:users.filter(u=>u.role==='supplier').length, c:'#7B2FFF'},
-          {l:'مشترون', v:users.filter(u=>u.role==='buyer').length, c:'#00C853'},
+          {l:'إجمالي المستخدمين', v:users.length,                                            c:'#6C63FF'},
+          {l:'بانتظار الاعتماد',  v:users.filter(u=>!u.is_approved&&u.role!=='admin'&&u.role!=='owner').length, c:'#FFB800'},
+          {l:'موردون',             v:users.filter(u=>u.role==='supplier').length,              c:'#00E5A0'},
+          {l:'مشترون',            v:users.filter(u=>u.role==='buyer').length,                 c:'#00F5FF'},
         ].map(({l,v,c})=>(
-          <div key={l} className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-4">
+          <div key={l} className="rounded-2xl p-4"
+            style={{ background:'#0E0F1E', border:`1px solid ${c}33` }}>
             <p className="text-2xl font-bold" style={{color:c}}>{v}</p>
-            <p className="text-xs text-[#90A4AE] mt-0.5">{l}</p>
+            <p className="text-xs mt-0.5" style={{ color:'#8892B0' }}>{l}</p>
           </div>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 bg-[#0D1B5E] p-1 rounded-xl w-fit border border-[#00D4FF11]">
+      <div className="flex gap-1 p-1 rounded-xl w-fit"
+        style={{ background:'#0E0F1E', border:'1px solid #6C63FF22' }}>
         {[['all','الكل'],['pending','بانتظار الاعتماد'],['buyer','المشترون'],['supplier','الموردون']].map(([t,l])=>(
           <button key={t} onClick={()=>setFilter(t)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${filter===t?'bg-[#FF6B35] text-white':'text-[#90A4AE] hover:text-white'}`}>{l}</button>
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all`}
+            style={filter===t
+              ? { background:'linear-gradient(to left,#6C63FF,#00F5FF)', color:'#fff' }
+              : { color:'#8892B0' }
+            }
+            onMouseEnter={e=>{ if(filter!==t) e.currentTarget.style.color='#E8EAF6'; }}
+            onMouseLeave={e=>{ if(filter!==t) e.currentTarget.style.color='#8892B0'; }}>
+            {l}
+          </button>
         ))}
       </div>
 
-      <div className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl overflow-hidden">
+      <div className="rounded-2xl overflow-hidden"
+        style={{ background:'#0E0F1E', border:'1px solid #6C63FF22' }}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#00D4FF11]">
+            <tr style={{ borderBottom:'1px solid #6C63FF11' }}>
               {['الاسم','البريد الإلكتروني','الشركة','النوع','المدينة','الحالة','إجراءات'].map(h=>(
-                <th key={h} className="text-right px-4 py-3 text-[#90A4AE] text-xs font-semibold">{h}</th>
+                <th key={h} className="text-right px-4 py-3 text-xs font-semibold"
+                  style={{ color:'#8892B0' }}>{h}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#00D4FF08]">
-            {loading && <tr><td colSpan={7} className="text-center py-10 text-[#90A4AE]">جارٍ التحميل...</td></tr>}
-            {!loading && filtered.length===0 && <tr><td colSpan={7} className="text-center py-10 text-[#90A4AE]">لا يوجد مستخدمون</td></tr>}
+          <tbody>
+            {loading && (
+              <tr><td colSpan={7} className="text-center py-10" style={{ color:'#8892B0' }}>جارٍ التحميل...</td></tr>
+            )}
+            {!loading && filtered.length===0 && (
+              <tr><td colSpan={7} className="text-center py-10" style={{ color:'#8892B0' }}>لا يوجد مستخدمون</td></tr>
+            )}
             {filtered.map(u=>(
-              <tr key={u.id} className="hover:bg-[#0A0F2E] transition-colors">
-                <td className="px-4 py-3 text-white font-medium">{u.name}</td>
-                <td className="px-4 py-3 text-[#90A4AE] text-xs">{u.email}</td>
-                <td className="px-4 py-3 text-[#90A4AE] text-xs truncate max-w-[120px]">{u.company_name||'—'}</td>
+              <tr key={u.id} className="transition-colors"
+                style={{ borderTop:'1px solid #6C63FF08' }}
+                onMouseEnter={e=>e.currentTarget.style.background='#13142A'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <td className="px-4 py-3 text-white font-medium flex items-center gap-2">
+                  {u.role==='owner' && <Crown size={12} style={{ color:'#FF6BFF' }}/>}
+                  {u.name}
+                </td>
+                <td className="px-4 py-3 text-xs" style={{ color:'#8892B0' }}>{u.email}</td>
+                <td className="px-4 py-3 text-xs truncate max-w-[120px]" style={{ color:'#8892B0' }}>{u.company_name||'—'}</td>
                 <td className="px-4 py-3">
-                  <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{color:roleColor[u.role],background:roleColor[u.role]+'20'}}>
-                    {roleLabel[u.role]}
+                  <span className="text-xs font-bold px-2 py-1 rounded-lg"
+                    style={{ color:roleColor[u.role]||'#8892B0', background:(roleColor[u.role]||'#8892B0')+'20' }}>
+                    {roleLabel[u.role]||u.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-[#90A4AE] text-xs">{u.city||'—'}</td>
+                <td className="px-4 py-3 text-xs" style={{ color:'#8892B0' }}>{u.city||'—'}</td>
                 <td className="px-4 py-3">
                   {u.is_approved
-                    ? <span className="text-xs text-[#00C853] font-bold">✓ معتمد</span>
-                    : <span className="text-xs text-[#FF6B35] font-bold">⏳ معلّق</span>
+                    ? <span className="text-xs font-bold" style={{ color:'#00E5A0' }}>✓ معتمد</span>
+                    : <span className="text-xs font-bold" style={{ color:'#FFB800' }}>⏳ معلّق</span>
                   }
                 </td>
                 <td className="px-4 py-3">
-                  {u.role!=='admin' && (
+                  {u.role!=='admin' && u.role!=='owner' && (
                     <div className="flex gap-2">
                       {!u.is_approved && (
-                        <button onClick={()=>approve(u.id,true)} className="p-1.5 rounded-lg bg-[#00C85320] text-[#00C853] hover:bg-[#00C85340] transition-colors">
+                        <button onClick={()=>approve(u.id,true)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background:'#00E5A020', color:'#00E5A0' }}
+                          onMouseEnter={e=>e.currentTarget.style.background='#00E5A040'}
+                          onMouseLeave={e=>e.currentTarget.style.background='#00E5A020'}>
                           <CheckCircle size={14}/>
                         </button>
                       )}
                       {u.is_approved && (
-                        <button onClick={()=>approve(u.id,false)} className="p-1.5 rounded-lg bg-[#ef444420] text-red-400 hover:bg-[#ef444440] transition-colors">
+                        <button onClick={()=>approve(u.id,false)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ background:'#ef444420', color:'#ef4444' }}
+                          onMouseEnter={e=>e.currentTarget.style.background='#ef444440'}
+                          onMouseLeave={e=>e.currentTarget.style.background='#ef444420'}>
                           <XCircle size={14}/>
                         </button>
                       )}

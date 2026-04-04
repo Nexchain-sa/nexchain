@@ -23,62 +23,96 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F2E] flex items-center justify-center p-4 font-arabic" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center p-4 font-arabic"
+      style={{ background: '#07080F', direction:'rtl' }}>
+
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-[#00D4FF] opacity-5 blur-3xl"/>
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-[#7B2FFF] opacity-5 blur-3xl"/>
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full opacity-5 blur-3xl"
+          style={{ background: '#6C63FF' }}/>
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full opacity-5 blur-3xl"
+          style={{ background: '#00F5FF' }}/>
+        <div className="absolute top-3/4 right-3/4 w-64 h-64 rounded-full opacity-5 blur-3xl"
+          style={{ background: '#FF6BFF' }}/>
       </div>
 
       <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#7B2FFF] text-3xl text-[#0A0F2E] font-bold shadow-lg shadow-cyan-500/30 mb-4">⬡</div>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl text-3xl font-bold mb-4"
+            style={{
+              background: 'linear-gradient(135deg, #6C63FF, #00F5FF)',
+              color: '#07080F',
+              boxShadow: '0 0 30px #6C63FF44',
+            }}>⬡</div>
           <h1 className="text-3xl font-bold text-white">FLOWRIZ</h1>
-          <p className="text-[#90A4AE] mt-1">منصة سلاسل الإمداد الذكية</p>
+          <p className="mt-1" style={{ color: '#8892B0' }}>منصة سلاسل الإمداد الذكية</p>
         </div>
 
-        <div className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-8 shadow-2xl">
+        <div className="rounded-2xl p-8 shadow-2xl"
+          style={{
+            background: '#0E0F1E',
+            border: '1px solid #6C63FF33',
+            boxShadow: '0 0 40px #6C63FF15',
+          }}>
           <h2 className="text-xl font-bold text-white mb-6">تسجيل الدخول</h2>
           <form onSubmit={handle} className="space-y-4">
             <div>
-              <label className="block text-sm text-[#90A4AE] mb-1.5">البريد الإلكتروني</label>
+              <label className="block text-sm mb-1.5" style={{ color: '#8892B0' }}>البريد الإلكتروني</label>
               <input type="email" required value={form.email}
                 onChange={e => setForm({...form, email:e.target.value})}
-                className="w-full bg-[#0A0F2E] border border-[#00D4FF22] rounded-xl px-4 py-3 text-white placeholder-[#455A64] focus:outline-none focus:border-[#00D4FF] transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-white placeholder-[#455A64] focus:outline-none transition-colors"
+                style={{
+                  background: '#13142A',
+                  border: '1px solid #6C63FF33',
+                }}
+                onFocus={e => e.target.style.borderColor='#6C63FF'}
+                onBlur={e => e.target.style.borderColor='#6C63FF33'}
                 placeholder="email@company.com"/>
             </div>
             <div>
-              <label className="block text-sm text-[#90A4AE] mb-1.5">كلمة المرور</label>
+              <label className="block text-sm mb-1.5" style={{ color: '#8892B0' }}>كلمة المرور</label>
               <input type="password" required value={form.password}
                 onChange={e => setForm({...form, password:e.target.value})}
-                className="w-full bg-[#0A0F2E] border border-[#00D4FF22] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00D4FF] transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-white focus:outline-none transition-colors"
+                style={{
+                  background: '#13142A',
+                  border: '1px solid #6C63FF33',
+                }}
+                onFocus={e => e.target.style.borderColor='#6C63FF'}
+                onBlur={e => e.target.style.borderColor='#6C63FF33'}
                 placeholder="••••••••"/>
             </div>
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-l from-[#00D4FF] to-[#7B2FFF] text-white font-bold text-base hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-cyan-500/20">
+              className="w-full py-3 rounded-xl text-white font-bold text-base hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(to left, #6C63FF, #00F5FF)',
+                boxShadow: '0 0 20px #6C63FF33',
+              }}>
               {loading ? 'جارٍ الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
 
           {/* Demo accounts */}
-          <div className="mt-6 p-4 rounded-xl bg-[#0A0F2E] border border-[#00D4FF11]">
-            <p className="text-xs text-[#90A4AE] mb-2 font-bold">حسابات تجريبية:</p>
+          <div className="mt-6 p-4 rounded-xl" style={{ background: '#13142A', border: '1px solid #6C63FF22' }}>
+            <p className="text-xs mb-2 font-bold" style={{ color: '#8892B0' }}>حسابات تجريبية:</p>
             {[
-              {label:'مدير',   email:'admin@FLOWRIZ.sa',  pass:'Admin@123456'},
-              {label:'مشترٍ',  email:'buyer@demo.com',     pass:'Buyer@123456'},
-              {label:'مورد',   email:'supplier@demo.com',  pass:'Supplier@123456'},
+              { label:'👑 مالك المنصة', email:'owner@FLOWRIZ.sa',   pass:'Owner@Flowriz2025',  color:'#FF6BFF' },
+              { label:'🛡️ مدير النظام', email:'admin@FLOWRIZ.sa',   pass:'Admin@123456',       color:'#6C63FF' },
+              { label:'🛒 مشترٍ',        email:'buyer@demo.com',     pass:'Buyer@123456',       color:'#00F5FF' },
+              { label:'📦 مورد',          email:'supplier@demo.com',  pass:'Supplier@123456',    color:'#00E5A0' },
             ].map(a => (
-              <button key={a.email} onClick={() => setForm({email:a.email,password:a.pass})}
-                className="w-full text-right text-xs text-[#00D4FF] hover:text-white py-1 transition-colors">
+              <button key={a.email} onClick={() => setForm({email:a.email, password:a.pass})}
+                className="w-full text-right text-xs py-1.5 transition-colors hover:opacity-80"
+                style={{ color: a.color }}>
                 {a.label}: {a.email}
               </button>
             ))}
           </div>
 
-          <p className="text-center text-sm text-[#90A4AE] mt-4">
+          <p className="text-center text-sm mt-4" style={{ color: '#8892B0' }}>
             ليس لديك حساب؟{' '}
-            <Link to="/register" className="text-[#00D4FF] hover:underline font-bold">سجّل الآن</Link>
+            <Link to="/register" className="font-bold hover:underline" style={{ color: '#6C63FF' }}>سجّل الآن</Link>
           </p>
         </div>
       </div>

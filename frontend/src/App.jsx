@@ -19,7 +19,7 @@ import Layout     from './components/Layout';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center h-screen bg-navy-dark"><div className="text-cyan-DEFAULT text-xl animate-pulse">جارٍ التحميل...</div></div>;
+  if (loading) return <div className="flex items-center justify-center h-screen" style={{background:'#07080F'}}><div className="text-xl animate-pulse" style={{color:'#6C63FF'}}>جارٍ التحميل...</div></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
   return children;
@@ -46,7 +46,7 @@ const App = () => (
           <Route path="financing"    element={<Financing />} />
           <Route path="invoices"     element={<Invoices />} />
           <Route path="profile"      element={<Profile />} />
-          <Route path="admin"        element={<ProtectedRoute roles={['admin']}><AdminPanel /></ProtectedRoute>} />
+          <Route path="admin"        element={<ProtectedRoute roles={['admin','owner']}><AdminPanel /></ProtectedRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
