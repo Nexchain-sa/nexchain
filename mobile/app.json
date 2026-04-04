@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "FLOWRIZ",
+    "slug": "flowriz",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07080F"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07080F"
+      },
+      "package": "sa.flowriz.app",
+      "versionCode": 1
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "sa.flowriz.app"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "apiUrl": "https://nexchain-backend-5aja.onrender.com/api"
+    }
+  }
+}
