@@ -1,0 +1,8 @@
+{
+  "short_name": "NexChain",
+  "name": "NexChain - منصة سلاسل الإمداد",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0A0F2E",
+  "background_color": "#0A0F2E"
+}

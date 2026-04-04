@@ -1,0 +1,36 @@
+# render.yaml — نشر تلقائي على Render.com بضغطة واحدة
+# ارفع هذا الملف في جذر المشروع على GitHub
+# ثم اربط الـ repo بـ Render وسيتم النشر تلقائياً
+
+services:
+  # ── Backend API ──────────────────────────────────
+  - type: web
+    name: nexchain-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexchain-db
+          property: connectionString
+      - key: FRONTEND_URL
+        value: https://nexchain.netlify.app  # غيّر لرابطك الفعلي
+    healthCheckPath: /health
+    autoDeploy: true
+
+# ── PostgreSQL Database ───────────────────────────
+databases:
+  - name: nexchain-db
+    databaseName: nexchain_db
+    user: nexchain_user
+    plan: free
