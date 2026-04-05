@@ -1,35 +1,43 @@
-// FLOWRIZ AI Color Palette
+// FLOWRIZ — Black × Green × Gold Palette
 export const C = {
-  // Backgrounds
-  bgDeep:   '#07080F',
-  bgCard:   '#0E0F1E',
-  bgCard2:  '#13142A',
+  // ── Backgrounds ─────────────────────────────
+  bgDeep:   '#080808',   // Deep Black
+  bgCard:   '#111111',   // Card Black
+  bgCard2:  '#1A1A1A',   // Input Black
 
-  // AI Colors
-  violet:   '#6C63FF',
-  cyan:     '#00F5FF',
-  magenta:  '#FF6BFF',
-  emerald:  '#00E5A0',
-  gold:     '#FFB800',
+  // ── Primary Colors ───────────────────────────
+  green:    '#00C853',   // Emerald Green  ★ primary
+  greenDark:'#00952E',   // Dark Green
+  greenGlow:'#00C85344', // Green glow
+  gold:     '#FFB800',   // Premium Gold   ★ accent
+  goldDark: '#CC9200',   // Dark Gold
+  goldGlow: '#FFB80044', // Gold glow
+
+  // ── Neutrals ────────────────────────────────
+  white:    '#FFFFFF',
+  textMain: '#F0F0F0',
+  textMuted:'#6B7280',
+  textDim:  '#374151',
   red:      '#EF4444',
 
-  // Text
-  textMain: '#E8EAF6',
-  textMuted:'#8892B0',
-  white:    '#FFFFFF',
+  // ── Borders ─────────────────────────────────
+  borderGreen: '#00C85333',
+  borderGold:  '#FFB80033',
+  borderCard:  '#1F1F1F',
+  borderInput: '#2A2A2A',
 
-  // Borders (with alpha)
-  borderViolet: '#6C63FF33',
-  borderCyan:   '#00F5FF22',
-  borderCard:   '#6C63FF22',
+  // ── Gradients (use as array for LinearGradient) ──
+  gradGreen:  ['#00C853', '#00952E'],
+  gradGold:   ['#FFD700', '#FFB800'],
+  gradDark:   ['#1A1A1A', '#111111'],
 };
 
 export const roleColors = {
-  buyer:    C.cyan,
-  supplier: C.emerald,
-  investor: C.gold,
-  admin:    C.violet,
-  owner:    C.magenta,
+  buyer:    C.green,
+  supplier: C.gold,
+  investor: '#60A5FA',
+  admin:    C.green,
+  owner:    C.gold,
 };
 
 export const roleLabels = {

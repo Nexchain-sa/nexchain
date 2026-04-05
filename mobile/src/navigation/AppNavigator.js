@@ -5,37 +5,80 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { useAuth } from '../context/AuthContext';
-import { C, roleColors } from '../theme/colors';
+import { C } from '../theme/colors';
 import { LoadingScreen } from '../components';
 
-// Screens
-import LoginScreen       from '../screens/LoginScreen';
-import RegisterScreen    from '../screens/RegisterScreen';
-import DashboardScreen   from '../screens/DashboardScreen';
-import RFQListScreen     from '../screens/RFQListScreen';
-import RFQDetailScreen   from '../screens/RFQDetailScreen';
-import RFQCreateScreen   from '../screens/RFQCreateScreen';
+import LoginScreen        from '../screens/LoginScreen';
+import RegisterScreen     from '../screens/RegisterScreen';
+import DashboardScreen    from '../screens/DashboardScreen';
+import RFQListScreen      from '../screens/RFQListScreen';
+import RFQDetailScreen    from '../screens/RFQDetailScreen';
+import RFQCreateScreen    from '../screens/RFQCreateScreen';
 import CompetitionsScreen from '../screens/CompetitionsScreen';
-import InvoicesScreen    from '../screens/InvoicesScreen';
-import FinancingScreen   from '../screens/FinancingScreen';
-import ProfileScreen     from '../screens/ProfileScreen';
-import AdminScreen       from '../screens/AdminScreen';
+import InvoicesScreen     from '../screens/InvoicesScreen';
+import FinancingScreen    from '../screens/FinancingScreen';
+import ProfileScreen      from '../screens/ProfileScreen';
+import AdminScreen        from '../screens/AdminScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
-// Tab icon helper
-function TabIcon({ emoji, label, focused, color }) {
+// Custom Tab Bar
+function MyTabBar({ state, descriptors, navigation }) {
   return (
-    <View style={{ alignItems:'center', paddingTop:4 }}>
-      <Text style={{ fontSize: focused ? 22 : 18 }}>{emoji}</Text>
-      <Text style={{
-        fontSize:9, color, fontFamily:'Tajawal', marginTop:2,
-        fontWeight: focused ? '700' : '400',
-      }}>{label}</Text>
+    <View style={{
+      flexDirection: 'row',
+      backgroundColor: C.bgCard,
+      borderTopWidth: 1,
+      borderTopColor: C.borderCard,
+      paddingBottom: 10,
+      paddingTop: 6,
+    }}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const focused = state.index === index;
+        const color = focused ? C.green : C.textMuted;
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={() => navigation.navigate(route.name)}
+            activeOpacity={0.7}
+            style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
+            <View style={{
+              alignItems:'center',
+              paddingVertical:4,
+              paddingHorizontal:12,
+              borderRadius:12,
+              backgroundColor: focused ? C.green+'18' : 'transparent',
+            }}>
+              <Text style={{ fontSize: focused ? 20 : 18 }}>
+                {options.tabBarEmoji}
+              </Text>
+              <Text style={{
+                fontSize:9, color, fontFamily:'Tajawal', marginTop:2,
+                fontWeight: focused ? '800' : '500',
+              }}>
+                {options.tabBarLabel}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
+
+// Stack options
+const stackOpts = {
+  headerStyle:      { backgroundColor: C.bgCard },
+  headerTintColor:  C.textMain,
+  headerTitleStyle: { fontFamily:'Tajawal', fontWeight:'700', fontSize:17, color:C.white },
+  headerTitleAlign: 'center',
+  contentStyle:     { backgroundColor: C.bgDeep },
+  headerBackTitle:  'رجوع',
+  headerShadowVisible: false,
+};
 
 // RFQ Stack
 function RFQStack() {
@@ -48,52 +91,24 @@ function RFQStack() {
   );
 }
 
-// Main Tabs (by role)
+// Main Tabs
 function MainTabs() {
   const { user } = useAuth();
   const role = user?.role || 'buyer';
-  const rc   = roleColors[role] || C.violet;
-
-  const tabBar = ({ state, descriptors, navigation }) => (
-    <View style={{
-      flexDirection:'row',
-      backgroundColor: C.bgCard,
-      borderTopWidth:1,
-      borderTopColor: C.borderCard,
-      paddingBottom: 8,
-      paddingTop: 4,
-    }}>
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const focused = state.index === index;
-        return (
-          <TouchableOpacity
-            key={route.key}
-            onPress={() => navigation.navigate(route.name)}
-            style={{ flex:1, alignItems:'center' }}>
-            {options.tabBarIcon?.({ focused, color: focused ? rc : C.textMuted })}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
 
   return (
-    <Tab.Navigator tabBar={tabBar} screenOptions={{ headerShown:false }}>
+    <Tab.Navigator tabBar={p => <MyTabBar {...p}/>} screenOptions={{ headerShown:false }}>
+
       <Tab.Screen name="DashboardTab" component={DashboardScreen}
-        options={{
-          tabBarIcon: (p) => <TabIcon emoji="🏠" label="الرئيسية" {...p}/>,
-        }}/>
+        options={{ tabBarEmoji:'🏠', tabBarLabel:'الرئيسية' }}/>
 
       <Tab.Screen name="RFQsTab" component={RFQStack}
-        options={{
-          tabBarIcon: (p) => <TabIcon emoji="📋" label="الطلبات" {...p}/>,
-        }}/>
+        options={{ tabBarEmoji:'📋', tabBarLabel:'الطلبات' }}/>
 
       {(role==='buyer'||role==='supplier'||role==='admin'||role==='owner') && (
         <Tab.Screen name="CompetitionsTab" component={CompetitionsScreen}
           options={{
-            tabBarIcon: (p) => <TabIcon emoji="🏆" label="المنافسات" {...p}/>,
+            tabBarEmoji:'🏆', tabBarLabel:'المنافسات',
             headerShown:true, ...stackOpts, title:'المنافسات',
           }}/>
       )}
@@ -101,7 +116,7 @@ function MainTabs() {
       {(role==='buyer'||role==='supplier'||role==='admin'||role==='owner') && (
         <Tab.Screen name="InvoicesTab" component={InvoicesScreen}
           options={{
-            tabBarIcon: (p) => <TabIcon emoji="🧾" label="الفواتير" {...p}/>,
+            tabBarEmoji:'🧾', tabBarLabel:'الفواتير',
             headerShown:true, ...stackOpts, title:'الفواتير',
           }}/>
       )}
@@ -109,7 +124,7 @@ function MainTabs() {
       {(role==='investor'||role==='admin'||role==='owner') && (
         <Tab.Screen name="FinancingTab" component={FinancingScreen}
           options={{
-            tabBarIcon: (p) => <TabIcon emoji="💰" label="التمويل" {...p}/>,
+            tabBarEmoji:'💰', tabBarLabel:'التمويل',
             headerShown:true, ...stackOpts, title:'التمويل',
           }}/>
       )}
@@ -117,24 +132,25 @@ function MainTabs() {
       {(role==='admin'||role==='owner') && (
         <Tab.Screen name="AdminTab" component={AdminScreen}
           options={{
-            tabBarIcon: (p) => <TabIcon emoji={role==='owner'?'👑':'🛡️'} label="الإدارة" {...p}/>,
-            headerShown:true, ...stackOpts, title: role==='owner' ? 'لوحة المالك' : 'الإدارة',
+            tabBarEmoji: role==='owner' ? '👑' : '🛡️',
+            tabBarLabel: role==='owner' ? 'المالك' : 'الإدارة',
+            headerShown:true, ...stackOpts,
+            title: role==='owner' ? 'لوحة المالك' : 'لوحة الإدارة',
           }}/>
       )}
 
       <Tab.Screen name="ProfileTab" component={ProfileScreen}
         options={{
-          tabBarIcon: (p) => <TabIcon emoji="👤" label="حسابي" {...p}/>,
+          tabBarEmoji:'👤', tabBarLabel:'حسابي',
           headerShown:true, ...stackOpts, title:'الملف الشخصي',
         }}/>
     </Tab.Navigator>
   );
 }
 
-// Main Navigator
+// Root Navigator
 export default function AppNavigator() {
   const { user, loading } = useAuth();
-
   if (loading) return <LoadingScreen/>;
 
   return (
@@ -146,20 +162,10 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Login"    component={LoginScreen}/>
             <Stack.Screen name="Register" component={RegisterScreen}
-              options={{ ...stackOpts, headerShown:true, title:'إنشاء حساب' }}/>
+              options={{ headerShown:true, ...stackOpts, title:'إنشاء حساب جديد' }}/>
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-
-// Shared header options
-const stackOpts = {
-  headerStyle:       { backgroundColor: C.bgCard },
-  headerTintColor:   C.textMain,
-  headerTitleStyle:  { fontFamily:'Tajawal', fontWeight:'700', fontSize:17 },
-  headerTitleAlign:  'center',
-  headerBackTitle:   'رجوع',
-  contentStyle:      { backgroundColor: C.bgDeep },
-};

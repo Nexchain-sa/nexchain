@@ -6,28 +6,35 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#080808",
+    "primaryColor": "#00C853",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#07080F"
+      "backgroundColor": "#080808"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#07080F"
+        "backgroundColor": "#080808"
       },
       "package": "sa.flowriz.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "sa.flowriz.app"
     },
-    "plugins": [
-      "expo-font"
-    ],
+    "plugins": ["expo-font"],
     "extra": {
-      "apiUrl": "https://nexchain-backend-5aja.onrender.com/api"
+      "apiUrl": "https://nexchain-backend-5aja.onrender.com/api",
+      "eas": {
+        "projectId": "flowriz-mobile"
+      }
     }
   }
 }
