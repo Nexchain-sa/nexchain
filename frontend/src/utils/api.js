@@ -60,6 +60,7 @@ export const financingAPI = {
   listRequests: ()       => API.get('/financing/requests'),
   submitBid:   (reqId, data) => API.post(`/financing/requests/${reqId}/bid`, data),
   acceptBid:   (bidId)   => API.post(`/financing/bids/${bidId}/accept`),
+  fundByPlatform: (reqId, data) => API.post(`/financing/requests/${reqId}/fund-by-platform`, data),
 };
 
 // ── Competitions ──────────────────────────────────────────────────────────────

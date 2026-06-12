@@ -37,6 +37,7 @@ router.post('/financing/request',                           auth, mainC.requestF
 router.get ('/financing/requests',                          auth, mainC.listFinancingRequests);
 router.post('/financing/requests/:financing_request_id/bid',auth, requireRole('investor','admin'), mainC.submitFinancingBid);
 router.post('/financing/bids/:bid_id/accept',               auth, mainC.acceptFinancingBid);
+router.post('/financing/requests/:financing_request_id/fund-by-platform', auth, requireRole('admin','owner'), mainC.fundByPlatform);
 
 router.get ('/installments',             auth, mainC.listInstallments);
 router.post('/installments/:id/pay',     auth, mainC.payInstallment);

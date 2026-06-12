@@ -140,7 +140,7 @@ exports.acceptFinancingBid = async (req, res) => {
     const { rows: frRows } = await client.query('SELECT invoice_id, requester_id FROM financing_requests WHERE id=$1', [accBid.financing_request_id]);
     if (frRows[0] && frRows[0].requester_id) {
       const months  = Math.max(1, Math.round((Number(accBid.duration_days) || 90) / 30));
-      const rate    = Number(accBid.monthly_rate) || 0;
+      const rate    = (Number(accBid.monthly_rate) || 0) / 100;
       const perInst = Math.round((Number(accBid.offered_amount) * (1 + rate * months) / months) * 100) / 100;
       for (let i = 1; i <= months; i++) {
         await client.query(
@@ -352,4 +352,44 @@ exports.confirmInstallment = async (req, res) => {
     if (!rows.length) return res.status(404).json({ success: false, message: 'القسط غير موجود' });
     res.json({ success: true, data: rows[0], message: 'تم اعتماد السداد' });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+
+exports.fundByPlatform = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { financing_request_id } = req.params;
+    const { monthly_rate, duration_days } = req.body;
+    const { rows: fr } = await client.query(`SELECT * FROM financing_requests WHERE id=$1 AND status='open'`, [financing_request_id]);
+    if (!fr.length) { await client.query('ROLLBACK'); return res.status(404).json({ success:false, message:'طلب التمويل غير متاح أو مُموّل مسبقاً' }); }
+    const request = fr[0];
+    const rate   = (Number(monthly_rate) || 2) / 100;
+    const days   = Number(duration_days) || 90;
+    const amount = Number(request.requested_amount);
+    const { rows: bidRows } = await client.query(
+      `INSERT INTO financing_bids(financing_request_id,financier_id,financier_type,offered_amount,monthly_rate,duration_days,terms,status)
+       VALUES($1,$2,'fund',$3,$4,$5,'تمويل مباشر من صندوق المنصة','accepted') RETURNING *`,
+      [financing_request_id, req.user.id, amount, Number(monthly_rate) || 2, days]
+    );
+    const bid = bidRows[0];
+    await client.query(`UPDATE financing_bids SET status='rejected' WHERE financing_request_id=$1 AND id!=$2`, [financing_request_id, bid.id]);
+    await client.query(`UPDATE financing_requests SET status='funded',selected_bid_id=$1,financing_type='fund' WHERE id=$2`, [bid.id, financing_request_id]);
+    await client.query(`UPDATE invoices SET status='financed' WHERE id=$1`, [request.invoice_id]);
+    if (request.requester_id) {
+      const months  = Math.max(1, Math.round(days / 30));
+      const perInst = Math.round((amount * (1 + rate * months) / months) * 100) / 100;
+      for (let i = 1; i <= months; i++) {
+        await client.query(
+          `INSERT INTO installments(financing_request_id,invoice_id,payer_id,seq,amount,due_date,status) VALUES($1,$2,$3,$4,$5, CURRENT_DATE + ($6 || ' month')::interval, 'due')`,
+          [financing_request_id, request.invoice_id, request.requester_id, i, perInst, String(i)]
+        );
+      }
+    }
+    await client.query('COMMIT');
+    res.json({ success:true, message:'تم تمويل الصفقة من صندوق المنصة', data: bid });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success:false, message:'خطأ في الخادم' });
+  } finally { client.release(); }
 };

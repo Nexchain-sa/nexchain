@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { financingAPI, invoiceAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { Banknote, TrendingUp, Shield, Clock } from 'lucide-react';
+import { Banknote, TrendingUp, Shield, Clock, Landmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Financing() {
@@ -13,9 +13,15 @@ export default function Financing() {
   const [bidModal, setBidModal] = useState(null);
   const [bidForm, setBidForm] = useState({ offered_amount:'', monthly_rate:'', duration_days:'30', financier_type:'individual' });
   const [submitting, setSub] = useState(false);
+  const [fundModal, setFundModal] = useState(null);
+  const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90' });
+  const [funding, setFunding] = useState(false);
+  const isAdmin = ['admin','owner'].includes(user?.role);
+
+  const loadRequests = () => financingAPI.listRequests().then(r=>setRequests(r.data.data||[])).catch(()=>{});
 
   useEffect(() => {
-    financingAPI.listRequests().then(r=>setRequests(r.data.data||[])).catch(()=>{});
+    loadRequests();
     if(user?.role==='buyer'||user?.role==='supplier')
       invoiceAPI.list().then(r=>setInvoices(r.data.data||[])).catch(()=>{});
   }, []);
@@ -27,6 +33,16 @@ export default function Financing() {
       toast.success('تم تقديم عرض التمويل!'); setBidModal(null);
     } catch(err) { toast.error(err.response?.data?.message||'خطأ'); }
     finally { setSub(false); }
+  };
+
+  const fundByPlatform = async (e) => {
+    e.preventDefault(); setFunding(true);
+    try {
+      await financingAPI.fundByPlatform(fundModal.id, fundForm);
+      toast.success('تم تمويل الصفقة من صندوق المنصة!');
+      setFundModal(null); loadRequests();
+    } catch(err) { toast.error(err.response?.data?.message||'خطأ'); }
+    finally { setFunding(false); }
   };
 
   const inp = "w-full bg-[#F4F6FB] border border-[#EEF2FF] rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4F46E5] text-sm";
@@ -59,7 +75,7 @@ export default function Financing() {
       <div className="flex gap-1 bg-white p-1 rounded-xl w-fit border border-[#EEF2FF]">
         {[['browse','🔍 فرص التمويل'],['my','📋 فواتيري']].map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#059669] text-slate-800':'text-slate-500 hover:text-slate-800'}`}>{l}</button>
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#059669] !text-white':'text-slate-500 hover:text-slate-800'}`}>{l}</button>
         ))}
       </div>
 
@@ -83,11 +99,18 @@ export default function Financing() {
                     <span className="text-xs text-slate-500">{r.bid_count||0} عرض تمويل</span>
                   </div>
                 </div>
-                {(user?.role==='investor'||user?.role==='admin') && (
-                  <button onClick={()=>setBidModal(r)} className="px-4 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 text-sm font-bold hover:opacity-90 shadow-lg flex-shrink-0 !text-white">
-                    💰 تقديم عرض تمويل
-                  </button>
-                )}
+                <div className="flex flex-col gap-2 flex-shrink-0">
+                  {(user?.role==='investor'||user?.role==='admin'||user?.role==='owner') && (
+                    <button onClick={()=>setBidModal(r)} className="px-4 py-2.5 rounded-xl bg-[#4F46E5] text-sm font-bold hover:opacity-90 shadow-lg !text-white">
+                      💰 تقديم عرض تمويل
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button onClick={()=>setFundModal(r)} className="px-4 py-2.5 rounded-xl bg-[#0D9488] text-sm font-bold hover:opacity-90 shadow-lg !text-white flex items-center gap-1.5 justify-center">
+                      <Landmark size={15}/> تمويل من صندوق المنصة
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="mt-3 bg-[#F4F6FB] rounded-xl overflow-hidden h-1.5">
                 <div className="h-full bg-[#4F46E5] !text-white" style={{width:`${Math.min((r.bid_count||0)*15,100)}%`}}/>
@@ -153,6 +176,32 @@ export default function Financing() {
                 {submitting?'...':'تقديم عرض التمويل'}
               </button>
               <button type="button" onClick={()=>setBidModal(null)} className="px-4 py-2.5 rounded-xl border border-[#E5E7EF] text-slate-500">إلغاء</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Platform fund modal */}
+      {fundModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={()=>setFundModal(null)}>
+          <form onSubmit={fundByPlatform} onClick={e=>e.stopPropagation()}
+            className="bg-white border border-[#E5E7EF] rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Landmark size={20} style={{color:'#0D9488'}}/> تمويل من صندوق المنصة</h3>
+            <p className="text-slate-500 text-sm">الفاتورة: {fundModal.invoice_number} — SAR {Number(fundModal.invoice_amount||0).toLocaleString()}</p>
+            <p className="text-xs text-slate-500 bg-[#F0FDFA] rounded-lg p-3">ستموّل المنصة هذه الصفقة مباشرة من صندوقها، ويعود الربح بالكامل للمنصة، ويُنشأ جدول الأقساط تلقائياً للمشتري.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-slate-500 mb-1.5 block">الربح الشهري % *</label>
+                <input required type="number" step="0.1" className={inp} value={fundForm.monthly_rate} onChange={e=>setFundForm({...fundForm,monthly_rate:e.target.value})}/></div>
+              <div><label className="text-xs text-slate-500 mb-1.5 block">مدة التقسيط *</label>
+                <select className={inp} value={fundForm.duration_days} onChange={e=>setFundForm({...fundForm,duration_days:e.target.value})}>
+                  <option value="90">3 أشهر</option><option value="180">6 أشهر</option><option value="360">12 شهر</option>
+                </select></div>
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" disabled={funding} className="flex-1 py-2.5 rounded-xl bg-[#0D9488] font-bold hover:opacity-90 disabled:opacity-50 !text-white">
+                {funding?'...':'تأكيد التمويل من الصندوق'}
+              </button>
+              <button type="button" onClick={()=>setFundModal(null)} className="px-4 py-2.5 rounded-xl border border-[#E5E7EF] text-slate-500">إلغاء</button>
             </div>
           </form>
         </div>
