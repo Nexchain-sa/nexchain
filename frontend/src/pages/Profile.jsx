@@ -33,38 +33,38 @@ export default function Profile() {
     finally { setSaving(false); }
   };
 
-  const inp = "w-full bg-[#0A0F2E] border border-[#00D4FF22] rounded-xl px-4 py-2.5 text-white placeholder-[#455A64] focus:outline-none focus:border-[#00D4FF] text-sm";
-  const lbl = "block text-xs text-[#90A4AE] mb-1.5 font-medium";
+  const inp = "w-full bg-[#F4F6FB] border border-[#EEF2FF] rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4F46E5] text-sm";
+  const lbl = "block text-xs text-slate-500 mb-1.5 font-medium";
   const roleLabel = { buyer:'مشترٍ', supplier:'مورد', investor:'مستثمر', admin:'مدير النظام' };
 
   return (
     <div className="font-arabic max-w-lg space-y-5" dir="rtl">
-      <h1 className="text-xl font-bold text-white">الملف الشخصي</h1>
+      <h1 className="text-xl font-bold text-slate-800">الملف الشخصي</h1>
 
       {/* Avatar card */}
-      <div className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00D4FF] to-[#7B2FFF] flex items-center justify-center text-2xl font-bold text-[#0A0F2E] flex-shrink-0">
+      <div className="bg-white border border-[#EEF2FF] rounded-2xl p-5 flex items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4F46E5] to-[#0D9488] flex items-center justify-center text-2xl font-bold text-white flex-shrink-0">
           {user?.name?.[0]}
         </div>
         <div>
-          <p className="text-white font-bold text-lg">{user?.name}</p>
-          <p className="text-[#00D4FF] text-sm">{roleLabel[user?.role]}</p>
-          <p className="text-[#90A4AE] text-xs mt-0.5">{user?.email}</p>
+          <p className="text-slate-800 font-bold text-lg">{user?.name}</p>
+          <p className="text-[#4F46E5] text-sm">{roleLabel[user?.role]}</p>
+          <p className="text-slate-500 text-xs mt-0.5">{user?.email}</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#0D1B5E] p-1 rounded-xl w-fit border border-[#00D4FF11]">
+      <div className="flex gap-1 bg-white p-1 rounded-xl w-fit border border-[#EEF2FF]">
         {[['profile',<User size={14}/>, 'البيانات'],['password',<Lock size={14}/>, 'كلمة المرور']].map(([t,icon,l])=>(
           <button key={t} onClick={()=>setTab(t)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#00D4FF] text-[#0A0F2E]':'text-[#90A4AE] hover:text-white'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#4F46E5] text-[#1E293B]':'text-slate-500 hover:text-slate-800'}`}>
             {icon}{l}
           </button>
         ))}
       </div>
 
       {tab==='profile' && (
-        <form onSubmit={saveProfile} className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-5 space-y-4">
+        <form onSubmit={saveProfile} className="bg-white border border-[#EEF2FF] rounded-2xl p-5 space-y-4">
           <div><label className={lbl}>الاسم الكامل</label>
             <input className={inp} value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
           <div><label className={lbl}>اسم الشركة / المؤسسة</label>
@@ -75,21 +75,21 @@ export default function Profile() {
             <div><label className={lbl}>المدينة</label>
               <input className={inp} value={form.city} onChange={e=>setForm({...form,city:e.target.value})}/></div>
           </div>
-          <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-l from-[#00D4FF] to-[#7B2FFF] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg">
+          <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 font-bold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg !text-white">
             <Save size={15}/>{saving?'جارٍ الحفظ...':'حفظ التغييرات'}
           </button>
         </form>
       )}
 
       {tab==='password' && (
-        <form onSubmit={changePw} className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-5 space-y-4">
+        <form onSubmit={changePw} className="bg-white border border-[#EEF2FF] rounded-2xl p-5 space-y-4">
           <div><label className={lbl}>كلمة المرور الحالية</label>
             <input required type="password" className={inp} value={pwForm.current_password} onChange={e=>setPwForm({...pwForm,current_password:e.target.value})}/></div>
           <div><label className={lbl}>كلمة المرور الجديدة</label>
             <input required type="password" className={inp} value={pwForm.new_password} onChange={e=>setPwForm({...pwForm,new_password:e.target.value})}/></div>
           <div><label className={lbl}>تأكيد كلمة المرور الجديدة</label>
             <input required type="password" className={inp} value={pwForm.confirm} onChange={e=>setPwForm({...pwForm,confirm:e.target.value})}/></div>
-          <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-l from-[#00D4FF] to-[#7B2FFF] text-white font-bold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg">
+          <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 font-bold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg !text-white">
             <Lock size={15}/>{saving?'جارٍ التغيير...':'تغيير كلمة المرور'}
           </button>
         </form>

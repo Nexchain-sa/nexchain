@@ -4,21 +4,35 @@
 @tailwind utilities;
 
 :root {
-  --primary:      #1D4ED8;
-  --primary-dark: #1E40AF;
-  --primary-light:#3B82F6;
-  --success:      #059669;
-  --warning:      #D97706;
-  --danger:       #DC2626;
-  --info:         #0EA5E9;
-  --bg-main:      #F1F5F9;
-  --bg-card:      #FFFFFF;
-  --sidebar-bg:   #0F172A;
-  --sidebar-text: #CBD5E1;
-  --sidebar-active:#3B82F6;
-  --text-main:    #1E293B;
-  --text-muted:   #64748B;
-  --border:       #E2E8F0;
+  /* Brand — Indigo + Teal (professional / global) */
+  --primary:       #4F46E5;
+  --primary-dark:  #4338CA;
+  --primary-light: #6366F1;
+  --primary-50:    #EEF2FF;
+  --primary-100:   #E0E7FF;
+  --primary-900:   #312E81;
+  --primary-950:   #1E1B4B;
+
+  --accent:        #0D9488;
+  --accent-light:  #14B8A6;
+  --accent-50:     #F0FDFA;
+  --accent-100:    #CCFBF1;
+  --accent-700:    #0F766E;
+
+  --success:       #059669;
+  --warning:       #D97706;
+  --danger:        #DC2626;
+  --info:          #0EA5E9;
+
+  --bg-main:       #F4F6FB;
+  --bg-card:       #FFFFFF;
+  --sidebar-bg:    #1E1B4B;
+  --sidebar-bg2:   #312E81;
+  --sidebar-text:  #C7CBE8;
+  --sidebar-active:#4F46E5;
+  --text-main:     #1E293B;
+  --text-muted:    #64748B;
+  --border:        #E5E7EF;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -32,10 +46,10 @@ body {
   min-height: 100vh;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #F1F5F9; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EEF0F6; }
+::-webkit-scrollbar-thumb { background: #C7CBE8; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #A5A3C9; }
 
 input[type="date"],
 input[type="datetime-local"] { color-scheme: light; }

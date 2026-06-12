@@ -18,6 +18,16 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'المستخدم غير موجود' });
 
     req.user = rows[0];
+
+    // الدور الفعّال — يتيح للحساب الواحد العمل بعدة أدوار (مشترٍ/بائع/ممول)
+    req.user.baseRole = rows[0].role;
+    const activeRole = req.headers['x-active-role'];
+    const OPERATIONAL = ['buyer', 'supplier', 'investor'];
+    const allowed = (rows[0].role === 'admin' || rows[0].role === 'owner')
+      ? [...OPERATIONAL, 'admin', 'owner']
+      : OPERATIONAL;
+    if (activeRole && allowed.includes(activeRole)) req.user.role = activeRole;
+
     next();
   } catch (err) {
     return res.status(401).json({ success: false, message: 'جلسة منتهية — يرجى إعادة تسجيل الدخول' });

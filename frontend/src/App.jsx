@@ -19,7 +19,7 @@ import Layout     from './components/Layout';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center h-screen" style={{background:'#07080F'}}><div className="text-xl animate-pulse" style={{color:'#6C63FF'}}>جارٍ التحميل...</div></div>;
+  if (loading) return <div className="flex items-center justify-center h-screen" style={{background:'#F4F6FB'}}><div className="text-xl animate-pulse" style={{color:'#4F46E5'}}>جارٍ التحميل...</div></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
   return children;
@@ -29,8 +29,8 @@ const App = () => (
   <BrowserRouter>
     <AuthProvider>
       <Toaster position="bottom-left" toastOptions={{
-        style: { background:'#0D1B5E', color:'#E8EAF6', border:'1px solid #00D4FF33', fontFamily:'Tajawal,sans-serif', direction:'rtl' },
-        success: { iconTheme: { primary:'#00C853', secondary:'#fff' } },
+        style: { background:'#1E293B', color:'#E8EAF6', border:'1px solid #EEF2FF', fontFamily:'Tajawal,sans-serif', direction:'rtl' },
+        success: { iconTheme: { primary:'#059669', secondary:'#fff' } },
         error:   { iconTheme: { primary:'#ef4444', secondary:'#fff' } },
       }} />
       <Routes>

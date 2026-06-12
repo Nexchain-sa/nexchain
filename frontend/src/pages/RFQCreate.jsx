@@ -27,13 +27,13 @@ export function RFQCreate() {
     } finally { setL(false); }
   };
 
-  const inp = "w-full bg-[#0A0F2E] border border-[#00D4FF22] rounded-xl px-4 py-2.5 text-white placeholder-[#455A64] focus:outline-none focus:border-[#00D4FF] text-sm transition-colors";
-  const lbl = "block text-xs text-[#90A4AE] mb-1.5 font-medium";
+  const inp = "w-full bg-[#F4F6FB] border border-[#EEF2FF] rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4F46E5] text-sm transition-colors";
+  const lbl = "block text-xs text-slate-500 mb-1.5 font-medium";
 
   return (
     <div className="font-arabic max-w-2xl" dir="rtl">
-      <h1 className="text-xl font-bold text-white mb-6">📝 طلب عرض سعر جديد (RFQ)</h1>
-      <form onSubmit={handle} className="bg-[#0D1B5E] border border-[#00D4FF22] rounded-2xl p-6 space-y-4">
+      <h1 className="text-xl font-bold text-slate-800 mb-6">📝 طلب عرض سعر جديد (RFQ)</h1>
+      <form onSubmit={handle} className="bg-white border border-[#EEF2FF] rounded-2xl p-6 space-y-4">
         <div>
           <label className={lbl}>عنوان الطلب *</label>
           <input required className={inp} placeholder="مثال: توريد 50 جهاز حاسب آلي..." value={form.title} onChange={e=>set('title',e.target.value)}/>
@@ -77,11 +77,11 @@ export function RFQCreate() {
         </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={loading}
-            className="flex-1 py-3 rounded-xl bg-gradient-to-l from-[#00D4FF] to-[#7B2FFF] text-white font-bold hover:opacity-90 disabled:opacity-50 shadow-lg">
+            className="flex-1 py-3 rounded-xl bg-[#4F46E5] text-slate-800 font-bold hover:opacity-90 disabled:opacity-50 shadow-lg !text-white">
             {loading ? 'جارٍ النشر...' : '🚀 نشر الطلب'}
           </button>
           <button type="button" onClick={()=>navigate(-1)}
-            className="px-6 py-3 rounded-xl border border-[#00D4FF33] text-[#90A4AE] hover:text-white hover:border-[#00D4FF] transition-colors">
+            className="px-6 py-3 rounded-xl border border-[#EEF2FF] text-slate-500 hover:text-slate-800 hover:border-[#4F46E5] transition-colors">
             إلغاء
           </button>
         </div>

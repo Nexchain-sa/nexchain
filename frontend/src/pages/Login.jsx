@@ -26,11 +26,11 @@ export default function Login() {
 
       {/* Left panel — branding */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12"
-        style={{ background:'#0F172A' }}>
+        style={{ background:'#1E1B4B' }}>
         <div>
           <div className="flex items-center gap-3 mb-16">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl"
-              style={{ background:'#1D4ED8', color:'#FFFFFF' }}>⬡</div>
+              style={{ background:'#4F46E5', color:'#FFFFFF' }}>⬡</div>
             <span className="font-bold text-2xl text-white tracking-widest">FLOWRIZ</span>
           </div>
           <h2 className="text-4xl font-bold text-white leading-tight mb-4">
@@ -47,7 +47,7 @@ export default function Login() {
             { label:'طلب شراء', value:'8,000+' },
             { label:'قيمة المعاملات', value:'SAR 2B+' },
           ].map(s => (
-            <div key={s.label} className="rounded-xl p-4" style={{ background:'#1E293B' }}>
+            <div key={s.label} className="rounded-xl p-4" style={{ background:'#312E81' }}>
               <p className="text-2xl font-bold text-white">{s.value}</p>
               <p className="text-sm text-slate-400 mt-1">{s.label}</p>
             </div>
@@ -60,7 +60,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl"
-              style={{ background:'#1D4ED8', color:'#FFFFFF' }}>⬡</div>
+              style={{ background:'#4F46E5', color:'#FFFFFF' }}>⬡</div>
             <span className="font-bold text-2xl text-slate-800 tracking-widest">FLOWRIZ</span>
           </div>
 
@@ -84,7 +84,7 @@ export default function Login() {
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl text-white font-bold text-base transition-all disabled:opacity-50 hover:opacity-90"
-              style={{ background:'#1D4ED8' }}>
+              style={{ background:'#4F46E5' }}>
               {loading ? 'جارٍ الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
@@ -96,7 +96,7 @@ export default function Login() {
               {[
                 { label:'مالك المنصة', email:'owner@FLOWRIZ.sa',  pass:'Owner@Flowriz2025', color:'#BE123C', bg:'#FFF1F2' },
                 { label:'مدير النظام', email:'admin@FLOWRIZ.sa',  pass:'Admin@123456',      color:'#7C3AED', bg:'#F5F3FF' },
-                { label:'مشترٍ',       email:'buyer@demo.com',    pass:'Buyer@123456',      color:'#1D4ED8', bg:'#EFF6FF' },
+                { label:'مشترٍ',       email:'buyer@demo.com',    pass:'Buyer@123456',      color:'#4F46E5', bg:'#EFF6FF' },
                 { label:'مورد',        email:'supplier@demo.com', pass:'Supplier@123456',   color:'#059669', bg:'#ECFDF5' },
               ].map(a => (
                 <button key={a.email} onClick={() => setForm({email:a.email, password:a.pass})}

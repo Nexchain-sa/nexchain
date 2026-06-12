@@ -7,11 +7,11 @@ import { FileText, Trophy, Banknote, TrendingUp, Package, Users, Plus, ArrowLeft
 
 const Card = ({ label, value, sub, color='blue', icon:Icon }) => {
   const palette = {
-    blue:   { border:'#DBEAFE', icon:'#EFF6FF', text:'#1D4ED8', dot:'#1D4ED8' },
+    blue:   { border:'#E0E7FF', icon:'#EEF2FF', text:'#4F46E5', dot:'#4F46E5' },
     green:  { border:'#D1FAE5', icon:'#ECFDF5', text:'#059669', dot:'#059669' },
     amber:  { border:'#FEF3C7', icon:'#FFFBEB', text:'#D97706', dot:'#D97706' },
     purple: { border:'#EDE9FE', icon:'#F5F3FF', text:'#7C3AED', dot:'#7C3AED' },
-    sky:    { border:'#E0F2FE', icon:'#F0F9FF', text:'#0284C7', dot:'#0284C7' },
+    sky:    { border:'#CCFBF1', icon:'#F0FDFA', text:'#0D9488', dot:'#0D9488' },
   };
   const p = palette[color] || palette.blue;
   return (
@@ -38,8 +38,8 @@ const revenueData = [
   {m:'يوليو',rev:390000},
 ];
 const pieData = [
-  {name:'عمولات',  value:35, color:'#1D4ED8'},
-  {name:'اشتراكات',value:28, color:'#0EA5E9'},
+  {name:'عمولات',  value:35, color:'#4F46E5'},
+  {name:'اشتراكات',value:28, color:'#0D9488'},
   {name:'تمويل',   value:25, color:'#059669'},
   {name:'منافسات', value:12, color:'#D97706'},
 ];
@@ -49,7 +49,7 @@ const CustomTooltip = ({active,payload,label}) => {
   return (
     <div className="bg-white rounded-xl p-3 text-xs border border-slate-200 shadow-sm">
       <p className="text-slate-500 mb-1">{label}</p>
-      <p className="font-bold text-blue-700">SAR {payload[0].value.toLocaleString()}</p>
+      <p className="font-bold text-indigo-700">SAR {payload[0].value.toLocaleString()}</p>
     </div>
   );
 };
@@ -86,7 +86,7 @@ export default function Dashboard() {
         {user?.role === 'buyer' && (
           <Link to="/rfqs/new"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition"
-            style={{ background:'#1D4ED8' }}>
+            style={{ background:'#4F46E5' }}>
             <Plus size={16}/> طلب شراء جديد
           </Link>
         )}
@@ -134,7 +134,7 @@ export default function Dashboard() {
               <XAxis dataKey="m" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
               <YAxis hide/>
               <Tooltip content={<CustomTooltip/>}/>
-              <Bar dataKey="rev" fill="#1D4ED8" radius={[6,6,0,0]}/>
+              <Bar dataKey="rev" fill="#4F46E5" radius={[6,6,0,0]}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -166,7 +166,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl overflow-hidden border border-slate-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-800">آخر طلبات الشراء</h3>
-            <Link to="/rfqs" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
+            <Link to="/rfqs" className="text-xs flex items-center gap-1 text-indigo-600 hover:underline">
               عرض الكل <ArrowLeft size={12}/>
             </Link>
           </div>
@@ -178,7 +178,7 @@ export default function Dashboard() {
               <Link key={r.id} to={`/rfqs/${r.id}`}
                 className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50">
-                  <FileText size={14} className="text-blue-600"/>
+                  <FileText size={14} className="text-indigo-600"/>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{r.title}</p>
@@ -193,7 +193,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl overflow-hidden border border-slate-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-800">المنافسات المفتوحة</h3>
-            <Link to="/competitions" className="text-xs flex items-center gap-1 text-blue-600 hover:underline">
+            <Link to="/competitions" className="text-xs flex items-center gap-1 text-indigo-600 hover:underline">
               عرض الكل <ArrowLeft size={12}/>
             </Link>
           </div>
@@ -224,12 +224,12 @@ export default function Dashboard() {
 
 export function StatusBadge({status}) {
   const map = {
-    open:      ['مفتوح', '#0284C7', '#E0F2FE'],
+    open:      ['مفتوح', '#0D9488', '#CCFBF1'],
     closed:    ['مغلق',  '#64748B', '#F1F5F9'],
     awarded:   ['مُرسى', '#059669', '#ECFDF5'],
     cancelled: ['ملغى',  '#DC2626', '#FEF2F2'],
     pending:   ['معلّق', '#D97706', '#FEF3C7'],
-    submitted: ['مقدّم', '#1D4ED8', '#EFF6FF'],
+    submitted: ['مقدّم', '#4F46E5', '#EEF2FF'],
     financed:  ['ممول',  '#059669', '#ECFDF5'],
   };
   const [label,color,bg] = map[status] || ['—','#64748B','#F1F5F9'];

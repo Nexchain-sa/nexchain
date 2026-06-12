@@ -20,17 +20,10 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: FLOWRIZ-db
-          property: connectionString
+        sync: false   # يُضبط يدويًا في لوحة Render = رابط اتصال Neon الدائم
       - key: FRONTEND_URL
-        value: https://FLOWRIZ.netlify.app  # غيّر لرابطك الفعلي
+        value: https://zesty-belekoy-ef3240.netlify.app  # رابط Netlify الفعلي
     healthCheckPath: /health
     autoDeploy: true
 
-# ── PostgreSQL Database ───────────────────────────
-databases:
-  - name: FLOWRIZ-db
-    databaseName: FLOWRIZ_db
-    user: FLOWRIZ_user
-    plan: free
+# قاعدة البيانات خارجية (Neon) — تُضبط عبر متغير DATABASE_URL في لوحة Render
