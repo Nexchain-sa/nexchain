@@ -14,7 +14,7 @@ export default function Financing() {
   const [bidForm, setBidForm] = useState({ offered_amount:'', monthly_rate:'', duration_days:'30', financier_type:'individual' });
   const [submitting, setSub] = useState(false);
   const [fundModal, setFundModal] = useState(null);
-  const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90' });
+  const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90', earnest_amount:'' });
   const [funding, setFunding] = useState(false);
   const isAdmin = ['admin','owner'].includes(user?.role);
 
@@ -197,6 +197,8 @@ export default function Financing() {
                   <option value="90">3 أشهر</option><option value="180">6 أشهر</option><option value="360">12 شهر</option>
                 </select></div>
             </div>
+            <div><label className="text-xs text-slate-500 mb-1.5 block">مبلغ الجدية (ر.س) — اختياري</label>
+              <input type="number" className={inp} value={fundForm.earnest_amount} onChange={e=>setFundForm({...fundForm,earnest_amount:e.target.value})} placeholder="0"/></div>
             <div className="flex gap-3">
               <button type="submit" disabled={funding} className="flex-1 py-2.5 rounded-xl bg-[#0D9488] font-bold hover:opacity-90 disabled:opacity-50 !text-white">
                 {funding?'...':'تأكيد التمويل من الصندوق'}

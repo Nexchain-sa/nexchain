@@ -66,6 +66,9 @@ export default function Deals() {
                   {d.inst_total > 0 && (
                     <span className="text-xs text-slate-500">الأقساط: {d.inst_paid}/{d.inst_total} مدفوعة</span>
                   )}
+                  {Number(d.earnest_amount) > 0 && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background:'#FEF3C7', color:'#92400E' }}>مبلغ جدية: {money(d.earnest_amount)} ر.س</span>
+                  )}
                 </div>
 
                 {/* Stepper */}

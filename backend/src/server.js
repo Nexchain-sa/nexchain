@@ -234,6 +234,9 @@ const autoSetup = async () => {
     // user documents + review status (idempotent)
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb`);
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) DEFAULT 'approved'`);
+    await client.query(`ALTER TABLE installments ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(500)`).catch(()=>{});
+    await client.query(`ALTER TABLE installments ADD COLUMN IF NOT EXISTS receipt_name VARCHAR(255)`).catch(()=>{});
+    await client.query(`ALTER TABLE financing_requests ADD COLUMN IF NOT EXISTS earnest_amount NUMERIC(15,2) DEFAULT 0`).catch(()=>{});
     // installments table
     await client.query(`
       CREATE TABLE IF NOT EXISTS installments (

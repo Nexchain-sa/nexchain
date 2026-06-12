@@ -58,7 +58,7 @@ export default function Competitions() {
       <div className="flex gap-1 bg-white p-1 rounded-xl w-fit border border-[#EEF2FF]">
         {tabs.map(([t,l])=>(
           <button key={t} onClick={()=>setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#0D9488] text-slate-800 shadow':'text-slate-500 hover:text-slate-800'}`}>{l}</button>
+            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#0D9488] !text-white shadow':'text-slate-500 hover:text-slate-800'}`}>{l}</button>
         ))}
       </div>
 

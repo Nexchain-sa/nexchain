@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { installmentAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { CreditCard, CheckCircle, Clock, AlertTriangle, Wallet } from 'lucide-react';
+import { CreditCard, CheckCircle, Clock, AlertTriangle, Wallet, Upload, FileText, X } from 'lucide-react';
+import { uploadToCloudinary } from '../config/cloudinary';
 import toast from 'react-hot-toast';
 
 const STATUS = {
@@ -28,10 +29,24 @@ export default function Installments() {
 
   useEffect(() => { load(); }, []);
 
-  const pay = async (id) => {
-    setBusy(id);
-    try { await installmentAPI.pay(id); toast.success('تم إرسال السداد للمراجعة'); load(); }
-    catch (e) { toast.error(e.response?.data?.message || 'تعذّر تسجيل السداد'); }
+  const [payModal, setPayModal] = useState(null);
+  const [receipt, setReceipt] = useState(null);
+  const [uploadingR, setUploadingR] = useState(false);
+
+  const openPay = (r) => { setReceipt(null); setPayModal(r); };
+  const uploadReceipt = async (file) => {
+    setUploadingR(true);
+    try { setReceipt(await uploadToCloudinary(file)); toast.success('تم رفع الإيصال'); }
+    catch (e) { toast.error(e.message || 'فشل الرفع'); }
+    finally { setUploadingR(false); }
+  };
+  const submitPay = async () => {
+    setBusy(payModal.id);
+    try {
+      await installmentAPI.pay(payModal.id, { receipt });
+      toast.success('تم إرسال السداد للمراجعة');
+      setPayModal(null); setReceipt(null); load();
+    } catch (e) { toast.error(e.response?.data?.message || 'تعذّر تسجيل السداد'); }
     finally { setBusy(null); }
   };
   const confirm = async (id) => {
@@ -114,7 +129,7 @@ export default function Installments() {
                     </td>
                     <td className="px-4 py-3">
                       {!isAdmin && (r.status === 'due' || r.status === 'overdue') && (
-                        <button onClick={() => pay(r.id)} disabled={busy === r.id}
+                        <button onClick={() => openPay(r)} disabled={busy === r.id}
                           className="px-3 py-1.5 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
                           style={{ background: '#4F46E5' }}>
                           {busy === r.id ? '...' : 'تأكيد السداد'}
@@ -122,11 +137,14 @@ export default function Installments() {
                       )}
                       {!isAdmin && r.status === 'pending_review' && <span className="text-xs text-amber-600">بانتظار المراجعة</span>}
                       {isAdmin && r.status === 'pending_review' && (
-                        <button onClick={() => confirm(r.id)} disabled={busy === r.id}
-                          className="px-3 py-1.5 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
-                          style={{ background: '#059669' }}>
-                          {busy === r.id ? '...' : 'اعتماد السداد'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {r.receipt_url && <a href={r.receipt_url} target="_blank" rel="noreferrer" className="text-xs underline" style={{ color:'#4F46E5' }}>الإيصال</a>}
+                          <button onClick={() => confirm(r.id)} disabled={busy === r.id}
+                            className="px-3 py-1.5 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#059669' }}>
+                            {busy === r.id ? '...' : 'اعتماد السداد'}
+                          </button>
+                        </div>
                       )}
                       {(r.status === 'paid') && <span className="text-xs text-emerald-600">مكتمل</span>}
                     </td>
@@ -137,6 +155,38 @@ export default function Installments() {
           </table>
         )}
       </div>
+
+      {payModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={()=>!busy && setPayModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm" dir="rtl" onClick={e=>e.stopPropagation()}>
+            <h3 className="font-bold text-lg text-slate-800 mb-1">تأكيد سداد القسط #{payModal.seq}</h3>
+            <p className="text-sm text-slate-500 mb-4">المبلغ: {money(Number(payModal.amount)+Number(payModal.late_fee||0))} ر.س — حوّل بنكيًا وارفع صورة الإيصال.</p>
+            <label className="flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm cursor-pointer border-2 border-dashed mb-3"
+              style={{ borderColor:'#C7CBE8', color:'#4F46E5', background:'#F8FAFC' }}>
+              <Upload size={16}/>
+              <span>{uploadingR ? 'جارٍ الرفع...' : (receipt ? 'تغيير الإيصال' : 'رفع إيصال التحويل (اختياري)')}</span>
+              <input type="file" accept="image/*,application/pdf" className="hidden" disabled={uploadingR}
+                onChange={e=>e.target.files.length && uploadReceipt(e.target.files[0])}/>
+            </label>
+            {receipt && (
+              <div className="flex items-center gap-2 text-xs rounded-lg px-3 py-2 mb-3" style={{ background:'#ECFDF5' }}>
+                <FileText size={14} style={{color:'#059669'}}/>
+                <a href={receipt.url} target="_blank" rel="noreferrer" className="flex-1 truncate text-slate-700 hover:underline">{receipt.name}</a>
+                <button onClick={()=>setReceipt(null)} className="text-slate-400 hover:text-red-500"><X size={14}/></button>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={submitPay} disabled={busy===payModal.id || uploadingR}
+                className="flex-1 py-2.5 rounded-xl text-white font-bold disabled:opacity-50 hover:opacity-90"
+                style={{ background:'#4F46E5' }}>
+                {busy===payModal.id ? 'جارٍ الإرسال...' : 'إرسال للمراجعة'}
+              </button>
+              <button onClick={()=>setPayModal(null)} disabled={busy===payModal.id}
+                className="px-4 py-2.5 rounded-xl border font-bold text-slate-600" style={{ borderColor:'#E5E7EF' }}>إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

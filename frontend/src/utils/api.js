@@ -88,7 +88,7 @@ export const categoriesAPI = { list: () => API.get('/categories') };
 
 export const installmentAPI = {
   list:    ()   => API.get('/installments'),
-  pay:     (id) => API.post(`/installments/${id}/pay`),
+  pay:     (id, data) => API.post(`/installments/${id}/pay`, data),
   confirm: (id) => API.put(`/installments/${id}/confirm`),
 };
 

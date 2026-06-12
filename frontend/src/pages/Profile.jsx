@@ -57,7 +57,7 @@ export default function Profile() {
       <div className="flex gap-1 bg-white p-1 rounded-xl w-fit border border-[#EEF2FF]">
         {[['profile',<User size={14}/>, 'البيانات'],['password',<Lock size={14}/>, 'كلمة المرور']].map(([t,icon,l])=>(
           <button key={t} onClick={()=>setTab(t)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#4F46E5] text-[#1E293B]':'text-slate-500 hover:text-slate-800'}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${tab===t?'bg-[#4F46E5] !text-white':'text-slate-500 hover:text-slate-800'}`}>
             {icon}{l}
           </button>
         ))}

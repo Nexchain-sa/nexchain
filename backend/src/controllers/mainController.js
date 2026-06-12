@@ -341,7 +341,8 @@ exports.listInstallments = async (req, res) => {
 
 exports.payInstallment = async (req, res) => {
   try {
-    const { rows } = await pool.query(`UPDATE installments SET status='pending_review' WHERE id=$1 AND payer_id=$2 AND status IN ('due','overdue') RETURNING *`, [req.params.id, req.user.id]);
+    const rc = req.body.receipt || {};
+    const { rows } = await pool.query(`UPDATE installments SET status='pending_review', receipt_url=$3, receipt_name=$4 WHERE id=$1 AND payer_id=$2 AND status IN ('due','overdue') RETURNING *`, [req.params.id, req.user.id, rc.url || null, rc.name || null]);
     if (!rows.length) return res.status(400).json({ success: false, message: 'تعذّر تسجيل السداد' });
     res.json({ success: true, data: rows[0], message: 'تم إرسال السداد للمراجعة' });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
@@ -361,7 +362,7 @@ exports.fundByPlatform = async (req, res) => {
   try {
     await client.query('BEGIN');
     const { financing_request_id } = req.params;
-    const { monthly_rate, duration_days } = req.body;
+    const { monthly_rate, duration_days, earnest_amount } = req.body;
     const { rows: fr } = await client.query(`SELECT * FROM financing_requests WHERE id=$1 AND status='open'`, [financing_request_id]);
     if (!fr.length) { await client.query('ROLLBACK'); return res.status(404).json({ success:false, message:'طلب التمويل غير متاح أو مُموّل مسبقاً' }); }
     const request = fr[0];
@@ -377,6 +378,7 @@ exports.fundByPlatform = async (req, res) => {
     await client.query(`UPDATE financing_bids SET status='rejected' WHERE financing_request_id=$1 AND id!=$2`, [financing_request_id, bid.id]);
     await client.query(`UPDATE financing_requests SET status='funded',selected_bid_id=$1,financing_type='fund' WHERE id=$2`, [bid.id, financing_request_id]);
     await client.query(`UPDATE invoices SET status='financed' WHERE id=$1`, [request.invoice_id]);
+    await client.query(`UPDATE financing_requests SET earnest_amount=$1 WHERE id=$2`, [Number(earnest_amount) || 0, financing_request_id]);
     if (request.requester_id) {
       const months  = Math.max(1, Math.round(days / 30));
       const perInst = Math.round((amount * (1 + rate * months) / months) * 100) / 100;
@@ -406,6 +408,7 @@ exports.listDeals = async (req, res) => {
              b.company_name AS buyer_name, s.company_name AS supplier_name,
              (SELECT fr.status FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS financing_status,
              (SELECT fr.financing_type FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS financing_type,
+             (SELECT fr.earnest_amount FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS earnest_amount,
              (SELECT COUNT(*)::int FROM installments inst WHERE inst.invoice_id=i.id) AS inst_total,
              (SELECT COUNT(*)::int FROM installments inst WHERE inst.invoice_id=i.id AND inst.status='paid') AS inst_paid
       FROM invoices i
