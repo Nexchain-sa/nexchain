@@ -231,6 +231,37 @@ const autoSetup = async () => {
     await client.query(`INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved) VALUES('مدير النظام','admin@FLOWRIZ.sa',$1,'admin','FLOWRIZ Platform',true,true) ON CONFLICT(email) DO NOTHING`, [adminHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('شركة الرياض للتقنية','buyer@demo.com',$1,'buyer','شركة الرياض للتقنية','+966501234567','الرياض',true,true) ON CONFLICT(email) DO NOTHING`, [buyerHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('مؤسسة النخبة للتوريد','supplier@demo.com',$1,'supplier','مؤسسة النخبة للتوريد','+966509876543','جدة',true,true) ON CONFLICT(email) DO NOTHING`, [supHash]);
+    // installments table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS installments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        financing_request_id UUID REFERENCES financing_requests(id) ON DELETE CASCADE,
+        invoice_id UUID REFERENCES invoices(id),
+        payer_id UUID NOT NULL REFERENCES users(id),
+        seq INTEGER NOT NULL,
+        amount NUMERIC(15,2) NOT NULL,
+        due_date DATE NOT NULL,
+        status VARCHAR(20) DEFAULT 'due' CHECK (status IN ('due','pending_review','paid','overdue')),
+        late_fee NUMERIC(15,2) DEFAULT 0,
+        paid_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    const { rows: buyerRow } = await client.query(`SELECT id FROM users WHERE email='buyer@demo.com'`);
+    if (buyerRow.length) {
+      const bId = buyerRow[0].id;
+      const { rows: instCount } = await client.query(`SELECT COUNT(*)::int AS n FROM installments WHERE payer_id=$1`, [bId]);
+      if (instCount[0].n === 0) {
+        const demoInst = [[1,8500,'-60 days','paid'],[2,8500,'-30 days','due'],[3,8500,'-2 days','pending_review'],[4,8500,'28 days','due'],[5,8500,'58 days','due'],[6,8500,'88 days','due']];
+        for (const [seq, amt, off, st] of demoInst) {
+          await client.query(
+            `INSERT INTO installments(payer_id,seq,amount,due_date,status,paid_at) VALUES($1,$2,$3, CURRENT_DATE + ($4)::interval, $5, $6)`,
+            [bId, seq, amt, off, st, st === 'paid' ? new Date() : null]
+          );
+        }
+        console.log('Demo installments seeded');
+      }
+    }
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {

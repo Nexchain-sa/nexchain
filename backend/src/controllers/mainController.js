@@ -135,6 +135,21 @@ exports.acceptFinancingBid = async (req, res) => {
         SELECT invoice_id FROM financing_requests WHERE id=$1)
     `, [bid[0].financing_request_id]);
 
+    // generate installment schedule on financing acceptance
+    const accBid = bid[0];
+    const { rows: frRows } = await client.query('SELECT invoice_id, requester_id FROM financing_requests WHERE id=$1', [accBid.financing_request_id]);
+    if (frRows[0] && frRows[0].requester_id) {
+      const months  = Math.max(1, Math.round((Number(accBid.duration_days) || 90) / 30));
+      const rate    = Number(accBid.monthly_rate) || 0;
+      const perInst = Math.round((Number(accBid.offered_amount) * (1 + rate * months) / months) * 100) / 100;
+      for (let i = 1; i <= months; i++) {
+        await client.query(
+          `INSERT INTO installments(financing_request_id,invoice_id,payer_id,seq,amount,due_date,status) VALUES($1,$2,$3,$4,$5, CURRENT_DATE + ($6 || ' month')::interval, 'due')`,
+          [accBid.financing_request_id, frRows[0].invoice_id || null, frRows[0].requester_id, i, perInst, String(i)]
+        );
+      }
+    }
+
     await client.query('COMMIT');
     res.json({ success: true, message: 'تم قبول عرض التمويل بنجاح' });
   } catch (err) {
@@ -308,4 +323,33 @@ exports.getCategories = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
+};
+
+
+// INSTALLMENTS
+exports.listInstallments = async (req, res) => {
+  try {
+    await pool.query(`UPDATE installments SET status='overdue', late_fee=ROUND(amount*0.02,2) WHERE status='due' AND due_date < CURRENT_DATE`);
+    const isAdmin = ['admin','owner'].includes(req.user.role);
+    const { rows } = isAdmin
+      ? await pool.query(`SELECT i.*, u.name AS payer_name, u.company_name FROM installments i JOIN users u ON u.id=i.payer_id ORDER BY i.due_date ASC`)
+      : await pool.query(`SELECT * FROM installments WHERE payer_id=$1 ORDER BY seq ASC`, [req.user.id]);
+    res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.payInstallment = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`UPDATE installments SET status='pending_review' WHERE id=$1 AND payer_id=$2 AND status IN ('due','overdue') RETURNING *`, [req.params.id, req.user.id]);
+    if (!rows.length) return res.status(400).json({ success: false, message: 'تعذّر تسجيل السداد' });
+    res.json({ success: true, data: rows[0], message: 'تم إرسال السداد للمراجعة' });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.confirmInstallment = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`UPDATE installments SET status='paid', paid_at=NOW() WHERE id=$1 RETURNING *`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'القسط غير موجود' });
+    res.json({ success: true, data: rows[0], message: 'تم اعتماد السداد' });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };

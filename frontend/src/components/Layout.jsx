@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -17,6 +17,7 @@ const navItems = {
     { to:'/rfqs',         icon:FileText,        label:'طلبات الشراء' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
+    { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
   ],
   supplier: [
@@ -36,6 +37,7 @@ const navItems = {
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
+    { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/admin',        icon:Users,            label:'إدارة المستخدمين' },
   ],
   owner: [
@@ -44,6 +46,7 @@ const navItems = {
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
+    { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/admin',        icon:ShieldCheck,      label:'إدارة المنصة' },
   ],
 };

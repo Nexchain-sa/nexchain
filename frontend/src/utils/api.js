@@ -84,4 +84,10 @@ export const adminAPI = {
 
 export const categoriesAPI = { list: () => API.get('/categories') };
 
+export const installmentAPI = {
+  list:    ()   => API.get('/installments'),
+  pay:     (id) => API.post(`/installments/${id}/pay`),
+  confirm: (id) => API.put(`/installments/${id}/confirm`),
+};
+
 export default API;

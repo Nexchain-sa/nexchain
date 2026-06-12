@@ -38,6 +38,10 @@ router.get ('/financing/requests',                          auth, mainC.listFina
 router.post('/financing/requests/:financing_request_id/bid',auth, requireRole('investor','admin'), mainC.submitFinancingBid);
 router.post('/financing/bids/:bid_id/accept',               auth, mainC.acceptFinancingBid);
 
+router.get ('/installments',             auth, mainC.listInstallments);
+router.post('/installments/:id/pay',     auth, mainC.payInstallment);
+router.put ('/installments/:id/confirm', auth, requireRole('admin','owner'), mainC.confirmInstallment);
+
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
 router.post('/competitions',                          auth, requireRole('buyer','admin'), mainC.createCompetition);
