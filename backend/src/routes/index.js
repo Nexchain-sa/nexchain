@@ -42,6 +42,7 @@ router.post('/financing/requests/:financing_request_id/fund-by-platform', auth, 
 router.get ('/installments',             auth, mainC.listInstallments);
 router.post('/installments/:id/pay',     auth, mainC.payInstallment);
 router.put ('/installments/:id/confirm', auth, requireRole('admin','owner'), mainC.confirmInstallment);
+router.get ('/deals', auth, mainC.listDeals);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);

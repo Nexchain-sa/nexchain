@@ -91,4 +91,6 @@ export const installmentAPI = {
   confirm: (id) => API.put(`/installments/${id}/confirm`),
 };
 
+export const dealAPI = { list: () => API.get('/deals') };
+
 export default API;

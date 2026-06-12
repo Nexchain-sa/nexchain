@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -14,6 +14,7 @@ const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: Trendin
 const navItems = {
   buyer: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'طلبات الشراء' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
@@ -22,6 +23,7 @@ const navItems = {
   ],
   supplier: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الفرص المتاحة' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/invoices',     icon:Receipt,          label:'فواتيري' },
@@ -33,6 +35,7 @@ const navItems = {
   ],
   admin: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
@@ -42,6 +45,7 @@ const navItems = {
   ],
   owner: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
