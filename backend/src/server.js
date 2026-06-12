@@ -231,6 +231,9 @@ const autoSetup = async () => {
     await client.query(`INSERT INTO users(name,email,password,role,company_name,is_verified,is_approved) VALUES('مدير النظام','admin@FLOWRIZ.sa',$1,'admin','FLOWRIZ Platform',true,true) ON CONFLICT(email) DO NOTHING`, [adminHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('شركة الرياض للتقنية','buyer@demo.com',$1,'buyer','شركة الرياض للتقنية','+966501234567','الرياض',true,true) ON CONFLICT(email) DO NOTHING`, [buyerHash]);
     await client.query(`INSERT INTO users(name,email,password,role,company_name,phone,city,is_verified,is_approved) VALUES('مؤسسة النخبة للتوريد','supplier@demo.com',$1,'supplier','مؤسسة النخبة للتوريد','+966509876543','جدة',true,true) ON CONFLICT(email) DO NOTHING`, [supHash]);
+    // user documents + review status (idempotent)
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS documents JSONB DEFAULT '[]'::jsonb`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) DEFAULT 'approved'`);
     // installments table
     await client.query(`
       CREATE TABLE IF NOT EXISTS installments (

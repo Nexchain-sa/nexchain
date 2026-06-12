@@ -295,7 +295,7 @@ exports.markRead = async (req, res) => {
 exports.adminUsers = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id,name,email,role,company_name,city,is_verified,is_approved,rating,total_orders,created_at
+      `SELECT id,name,email,role,company_name,city,is_verified,is_approved,review_status,documents,rating,total_orders,created_at
        FROM users ORDER BY created_at DESC`
     );
     res.json({ success: true, data: rows });
@@ -306,9 +306,10 @@ exports.adminUsers = async (req, res) => {
 
 exports.approveUser = async (req, res) => {
   try {
+    const rs = req.body.approve ? 'approved' : 'rejected';
     const { rows } = await pool.query(
-      `UPDATE users SET is_approved=$1,updated_at=NOW() WHERE id=$2 RETURNING id,name,is_approved`,
-      [req.body.approve, req.params.id]
+      `UPDATE users SET is_approved=$1,review_status=$2,updated_at=NOW() WHERE id=$3 RETURNING id,name,is_approved,review_status`,
+      [req.body.approve, rs, req.params.id]
     );
     res.json({ success: true, data: rows[0] });
   } catch (err) {

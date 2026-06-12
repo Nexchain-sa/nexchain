@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../utils/api';
+import { uploadToCloudinary } from '../config/cloudinary';
+import { Upload, FileText, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     name:'', email:'', password:'', confirm:'',
-    role:'buyer', company_name:'', phone:'', city:''
+    role:'buyer', company_name:'', phone:'', city:'', documents:[]
   });
 
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
+
+  const onFiles = async (files) => {
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const f of Array.from(files)) uploaded.push(await uploadToCloudinary(f));
+      setForm(prev => ({ ...prev, documents: [...prev.documents, ...uploaded] }));
+      toast.success('تم رفع المستند');
+    } catch (e) { toast.error(e.message || 'فشل الرفع'); }
+    finally { setUploading(false); }
+  };
+  const removeDoc = (i) => setForm(prev => ({ ...prev, documents: prev.documents.filter((_,x)=>x!==i) }));
 
   const handle = async (e) => {
     e.preventDefault();
@@ -20,9 +35,10 @@ export default function Register() {
     try {
       await authAPI.register({
         name:form.name, email:form.email, password:form.password,
-        role:form.role, company_name:form.company_name, phone:form.phone, city:form.city
+        role:form.role, company_name:form.company_name, phone:form.phone, city:form.city,
+        documents: form.documents
       });
-      toast.success('تم إنشاء الحساب! يرجى تسجيل الدخول');
+      toast.success('تم إنشاء الحساب! حسابك قيد المراجعة من الإدارة');
       navigate('/login');
     } catch(err) {
       toast.error(err.response?.data?.message || 'خطأ في التسجيل');
@@ -47,7 +63,7 @@ export default function Register() {
       <div className="w-full max-w-lg relative">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl text-2xl font-bold mb-3"
-            style={{ background:'linear-gradient(135deg, #4F46E5, #4F46E5)', color:'#1E293B', boxShadow:'0 0 25px #EEF2FF' }}>⬡</div>
+            style={{ background:'linear-gradient(135deg, #4F46E5, #4F46E5)', color:'#FFFFFF', boxShadow:'0 0 25px #EEF2FF' }}>⬡</div>
           <h1 className="text-2xl font-bold text-slate-800">إنشاء حساب جديد</h1>
           <p className="text-sm mt-1" style={{ color:'#8892B0' }}>انضم إلى منصة FLOWRIZ</p>
         </div>
@@ -126,8 +142,31 @@ export default function Register() {
               ))}
             </div>
 
-            <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-xl text-slate-800 font-bold hover:opacity-90 transition-opacity disabled:opacity-50 mt-2"
+            <div>
+              <label className="block text-xs mb-1.5 font-medium" style={{ color:'#8892B0' }}>المستندات المطلوبة (سجل تجاري، بطاقة، قوائم مالية...)</label>
+              <label className="flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm cursor-pointer border-2 border-dashed transition-colors"
+                style={{ borderColor:'#C7CBE8', color:'#4F46E5', background:'#F8FAFC' }}>
+                <Upload size={16}/>
+                <span>{uploading ? 'جارٍ الرفع...' : 'اختر الملفات (PDF / صور)'}</span>
+                <input type="file" multiple accept="image/*,application/pdf" className="hidden"
+                  disabled={uploading}
+                  onChange={e=>e.target.files.length && onFiles(e.target.files)}/>
+              </label>
+              {form.documents.length>0 && (
+                <div className="mt-2 space-y-1.5">
+                  {form.documents.map((d,i)=>(
+                    <div key={i} className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background:'#EEF2FF' }}>
+                      <FileText size={14} style={{color:'#4F46E5'}}/>
+                      <a href={d.url} target="_blank" rel="noreferrer" className="flex-1 truncate text-slate-700 hover:underline">{d.name}</a>
+                      <button type="button" onClick={()=>removeDoc(i)} className="text-slate-400 hover:text-red-500"><X size={14}/></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button type="submit" disabled={loading || uploading}
+              className="w-full py-3 rounded-xl text-white font-bold hover:opacity-90 transition-opacity disabled:opacity-50 mt-2"
               style={{ background:'linear-gradient(to left, #4F46E5, #4F46E5)', boxShadow:'0 0 20px #EEF2FF' }}>
               {loading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب'}
             </button>

@@ -34,6 +34,7 @@ export const authAPI = {
   me:       ()             => API.get('/auth/me'),
   updateProfile: (data)    => API.put('/auth/profile', data),
   changePassword: (data)   => API.put('/auth/change-password', data),
+  updateDocuments: (data)  => API.put('/auth/documents', data),
 };
 
 // ── RFQs ──────────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ const makeToken = (id) =>
 // POST /api/auth/register
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, company_name, phone, city } = req.body;
+    const { name, email, password, role, company_name, phone, city, documents } = req.body;
 
     if (!['buyer','supplier','investor'].includes(role))
       return res.status(400).json({ success: false, message: 'نوع الحساب غير صالح' });
@@ -19,10 +19,10 @@ exports.register = async (req, res) => {
 
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(`
-      INSERT INTO users(name,email,password,role,company_name,phone,city)
-      VALUES($1,$2,$3,$4,$5,$6,$7)
-      RETURNING id,name,email,role,company_name,phone,city,is_verified,created_at
-    `, [name, email, hash, role, company_name, phone, city]);
+      INSERT INTO users(name,email,password,role,company_name,phone,city,documents,review_status,is_approved)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,'pending',false)
+      RETURNING id,name,email,role,company_name,phone,city,is_verified,review_status,is_approved,documents,created_at
+    `, [name, email, hash, role, company_name, phone, city, JSON.stringify(documents || [])]);
 
     const user  = rows[0];
     const token = makeToken(user.id);
@@ -59,7 +59,7 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id,name,email,role,company_name,phone,city,logo_url,rating,total_orders,is_verified,is_approved,created_at FROM users WHERE id=$1',
+      'SELECT id,name,email,role,company_name,phone,city,logo_url,rating,total_orders,is_verified,is_approved,review_status,documents,created_at FROM users WHERE id=$1',
       [req.user.id]
     );
     res.json({ success: true, user: rows[0] });
@@ -93,6 +93,21 @@ exports.changePassword = async (req, res) => {
     const hash = await bcrypt.hash(new_password, 12);
     await pool.query('UPDATE users SET password=$1,updated_at=NOW() WHERE id=$2', [hash, req.user.id]);
     res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'خطأ في الخادم' });
+  }
+};
+
+// PUT /api/auth/documents
+exports.updateDocuments = async (req, res) => {
+  try {
+    const { documents } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE users SET documents=$1, review_status='pending', is_approved=false, updated_at=NOW()
+       WHERE id=$2 RETURNING id,name,email,role,review_status,is_approved,documents`,
+      [JSON.stringify(documents || []), req.user.id]
+    );
+    res.json({ success: true, user: rows[0], message: 'تم رفع المستندات — حسابك قيد المراجعة' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }

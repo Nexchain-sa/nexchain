@@ -11,6 +11,7 @@ router.post('/auth/login',            authC.login);
 router.get ('/auth/me',               auth, authC.me);
 router.put ('/auth/profile',          auth, authC.updateProfile);
 router.put ('/auth/change-password',  auth, authC.changePassword);
+router.put ('/auth/documents',         auth, authC.updateDocuments);
 
 // ── CATEGORIES ────────────────────────────────────────────────────────────────
 router.get('/categories', auth, mainC.getCategories);

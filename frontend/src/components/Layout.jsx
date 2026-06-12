@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -229,6 +229,18 @@ export default function Layout() {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6" style={{ background:'#F4F6FB' }}>
+          {user?.review_status === 'pending' && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background:'#FEF3C7', color:'#92400E' }}>
+              <Clock size={18}/>
+              <span>حسابك قيد المراجعة من إدارة المنصة. بعض الإجراءات قد تكون محدودة حتى الاعتماد.</span>
+            </div>
+          )}
+          {user?.review_status === 'rejected' && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background:'#FEE2E2', color:'#991B1B' }}>
+              <X size={18}/>
+              <span>تم رفض مستنداتك. يرجى مراجعة إدارة المنصة أو إعادة رفع المستندات.</span>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>
