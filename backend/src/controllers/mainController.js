@@ -295,7 +295,7 @@ exports.markRead = async (req, res) => {
 exports.adminUsers = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id,name,email,role,company_name,city,is_verified,is_approved,review_status,documents,rating,total_orders,created_at
+      `SELECT id,name,email,role,company_name,city,phone,is_verified,is_approved,review_status,documents,rating,total_orders,created_at
        FROM users ORDER BY created_at DESC`
     );
     res.json({ success: true, data: rows });

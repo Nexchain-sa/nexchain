@@ -1,7 +1,7 @@
 // AdminPanel.jsx
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../utils/api';
-import { Users, CheckCircle, XCircle, Crown, FileText } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Crown, FileText, Eye, Building2, Mail, Phone, MapPin, Calendar, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +10,7 @@ export function AdminPanel() {
   const [users, setUsers]   = useState([]);
   const [loading, setL]     = useState(true);
   const [filter, setFilter] = useState('all');
+  const [reviewUser, setReviewUser] = useState(null);
 
   const load = () => {
     adminAPI.users().then(r=>{ setUsers(r.data.data||[]); setL(false); }).catch(()=>setL(false));
@@ -137,6 +138,11 @@ export function AdminPanel() {
                 <td className="px-4 py-3">
                   {u.role!=='admin' && u.role!=='owner' && (
                     <div className="flex gap-2">
+                      <button onClick={()=>setReviewUser(u)} title="اطّلاع ومراجعة"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold hover:opacity-80"
+                        style={{ background:'#EEF2FF', color:'#4F46E5' }}>
+                        <Eye size={13}/> اطّلاع
+                      </button>
                       {!u.is_approved && (
                         <button onClick={()=>approve(u.id,true)} title="اعتماد"
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold hover:opacity-80"
@@ -159,6 +165,79 @@ export function AdminPanel() {
           </tbody>
         </table>
       </div>
+
+      {reviewUser && (() => {
+        const u = reviewUser;
+        const docs = u.documents || [];
+        const isImg = (url) => /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url) || /\/image\/upload\//.test(url);
+        const Info = ({ icon:Icon, label, value }) => (
+          <div className="flex items-center gap-2 text-sm">
+            <Icon size={15} className="text-slate-400 flex-shrink-0"/>
+            <span className="text-slate-400 w-28 flex-shrink-0">{label}</span>
+            <span className="text-slate-700 font-medium break-all">{value || '—'}</span>
+          </div>
+        );
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir="rtl" onClick={()=>setReviewUser(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+              <div className="flex items-center justify-between p-5 border-b" style={{borderColor:'#E5E7EF'}}>
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold" style={{background:roleColor[u.role]||'#4F46E5'}}>{u.name?.[0]}</div>
+                  <div>
+                    <p className="font-bold text-slate-800">{u.company_name || u.name}</p>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md" style={{color:roleColor[u.role],background:(roleColor[u.role]||'#4F46E5')+'20'}}>{roleLabel[u.role]||u.role}</span>
+                  </div>
+                </div>
+                <button onClick={()=>setReviewUser(null)} className="text-slate-400 hover:text-slate-700"><X size={20}/></button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="space-y-2">
+                  <Info icon={Users} label="الاسم" value={u.name}/>
+                  <Info icon={Mail} label="البريد الإلكتروني" value={u.email}/>
+                  <Info icon={Phone} label="الجوال" value={u.phone}/>
+                  <Info icon={Building2} label="الشركة" value={u.company_name}/>
+                  <Info icon={MapPin} label="المدينة" value={u.city}/>
+                  <Info icon={Calendar} label="تاريخ التسجيل" value={u.created_at ? new Date(u.created_at).toLocaleDateString('ar-EG') : ''}/>
+                </div>
+
+                <div>
+                  <p className="text-sm font-bold text-slate-700 mb-2">المستندات الرسمية ({docs.length})</p>
+                  {docs.length===0
+                    ? <p className="text-xs text-slate-400 bg-amber-50 rounded-lg p-3">لا توجد مستندات مرفوعة لهذا الحساب.</p>
+                    : <div className="grid sm:grid-cols-2 gap-2">
+                        {docs.map((d,i)=>(
+                          <a key={i} href={d.url} target="_blank" rel="noreferrer"
+                            className="flex items-center gap-2 border rounded-xl p-2 hover:opacity-90 transition-opacity" style={{borderColor:'#E5E7EF'}}>
+                            {isImg(d.url)
+                              ? <img src={d.url} alt={d.label||d.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0"/>
+                              : <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#EEF2FF'}}><FileText size={18} style={{color:'#4F46E5'}}/></div>}
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-700 truncate">{d.label || `مستند ${i+1}`}</p>
+                              <p className="text-[11px] text-slate-400 truncate">{d.name || 'فتح المستند'}</p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>}
+                </div>
+              </div>
+
+              {u.role!=='admin' && u.role!=='owner' && (
+                <div className="flex gap-3 p-5 border-t" style={{borderColor:'#E5E7EF'}}>
+                  <button onClick={()=>{approve(u.id,true); setReviewUser(null);}}
+                    className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#059669'}}>
+                    <CheckCircle size={16}/> قبول الحساب
+                  </button>
+                  <button onClick={()=>{reject(u.id); setReviewUser(null);}}
+                    className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#DC2626'}}>
+                    <XCircle size={16}/> رفض الحساب
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
