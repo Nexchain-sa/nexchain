@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { dashboardAPI, rfqAPI, competitionAPI } from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, Trophy, Banknote, TrendingUp, Package, Users, Plus, ArrowLeft } from 'lucide-react';
 
 const Card = ({ label, value, sub, color='blue', icon:Icon }) => {
+  const { t } = useLang();
   const palette = {
     blue:   { border:'#E0E7FF', icon:'#EEF2FF', text:'#4F46E5', dot:'#4F46E5' },
     green:  { border:'#D1FAE5', icon:'#ECFDF5', text:'#059669', dot:'#059669' },
@@ -18,9 +20,9 @@ const Card = ({ label, value, sub, color='blue', icon:Icon }) => {
     <div className="bg-white rounded-2xl p-5 border" style={{ borderColor: p.border }}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
+          <p className="text-xs font-medium text-slate-500 mb-1">{t(label)}</p>
           <p className="text-2xl font-bold" style={{ color: p.text }}>{value}</p>
-          {sub && <p className="text-xs mt-1 text-emerald-600 font-medium">{sub}</p>}
+          {sub && <p className="text-xs mt-1 text-emerald-600 font-medium">{t(sub)}</p>}
         </div>
         {Icon && (
           <div className="p-2.5 rounded-xl" style={{ background: p.icon }}>
@@ -56,6 +58,7 @@ const CustomTooltip = ({active,payload,label}) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t, dir, lang } = useLang();
   const [stats, setStats] = useState(null);
   const [rfqs,  setRfqs]  = useState([]);
   const [comps, setComps] = useState([]);
@@ -72,22 +75,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 font-arabic" dir="rtl">
+    <div className="space-y-6 font-arabic" dir={dir}>
       {/* Welcome header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
-            مرحباً، {user?.company_name || user?.name}
+            {t('مرحباً،')} {user?.company_name || user?.name}
           </h1>
           <p className="text-sm mt-1 text-slate-500">
-            {roleLabel[user?.role]} — {new Date().toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+            {t(roleLabel[user?.role])} — {new Date().toLocaleDateString(lang==='ar'?'ar-SA':'en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}
           </p>
         </div>
         {user?.role === 'buyer' && (
           <Link to="/rfqs/new"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition"
             style={{ background:'#4F46E5' }}>
-            <Plus size={16}/> طلب شراء جديد
+            <Plus size={16}/> {t('طلب شراء جديد')}
           </Link>
         )}
       </div>
@@ -128,7 +131,7 @@ export default function Dashboard() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200">
-          <h3 className="font-bold text-slate-800 mb-4">نمو الإيرادات الشهرية (SAR)</h3>
+          <h3 className="font-bold text-slate-800 mb-4">{t('نمو الإيرادات الشهرية (SAR)')}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={revenueData} barSize={28}>
               <XAxis dataKey="m" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
@@ -139,7 +142,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200">
-          <h3 className="font-bold text-slate-800 mb-4">توزيع الإيرادات</h3>
+          <h3 className="font-bold text-slate-800 mb-4">{t('توزيع الإيرادات')}</h3>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
@@ -153,7 +156,7 @@ export default function Dashboard() {
             {pieData.map(d=>(
               <div key={d.name} className="flex items-center gap-2 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background:d.color}}/>
-                <span className="flex-1 text-slate-500">{d.name}</span>
+                <span className="flex-1 text-slate-500">{t(d.name)}</span>
                 <span className="font-bold" style={{color:d.color}}>{d.value}%</span>
               </div>
             ))}
@@ -165,14 +168,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl overflow-hidden border border-slate-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800">آخر طلبات الشراء</h3>
+            <h3 className="font-bold text-slate-800">{t('آخر طلبات الشراء')}</h3>
             <Link to="/rfqs" className="text-xs flex items-center gap-1 text-indigo-600 hover:underline">
-              عرض الكل <ArrowLeft size={12}/>
+              {t('عرض الكل')} <ArrowLeft size={12}/>
             </Link>
           </div>
           <div className="divide-y divide-slate-50">
             {rfqs.length === 0 && (
-              <p className="text-sm text-center py-8 text-slate-400">لا توجد طلبات بعد</p>
+              <p className="text-sm text-center py-8 text-slate-400">{t('لا توجد طلبات بعد')}</p>
             )}
             {rfqs.map(r=>(
               <Link key={r.id} to={`/rfqs/${r.id}`}
@@ -182,7 +185,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{r.title}</p>
-                  <p className="text-xs text-slate-400">{r.rfq_number} · {r.quote_count||0} عروض</p>
+                  <p className="text-xs text-slate-400">{r.rfq_number} · {r.quote_count||0} {t('عروض')}</p>
                 </div>
                 <StatusBadge status={r.status}/>
               </Link>
@@ -192,14 +195,14 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-2xl overflow-hidden border border-slate-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800">المنافسات المفتوحة</h3>
+            <h3 className="font-bold text-slate-800">{t('المنافسات المفتوحة')}</h3>
             <Link to="/competitions" className="text-xs flex items-center gap-1 text-indigo-600 hover:underline">
-              عرض الكل <ArrowLeft size={12}/>
+              {t('عرض الكل')} <ArrowLeft size={12}/>
             </Link>
           </div>
           <div className="divide-y divide-slate-50">
             {comps.length === 0 && (
-              <p className="text-sm text-center py-8 text-slate-400">لا توجد منافسات مفتوحة</p>
+              <p className="text-sm text-center py-8 text-slate-400">{t('لا توجد منافسات مفتوحة')}</p>
             )}
             {comps.map(c=>(
               <div key={c.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer">
@@ -208,7 +211,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">{c.title}</p>
-                  <p className="text-xs text-slate-400">{c.comp_number} · {c.bid_count||0} عروض</p>
+                  <p className="text-xs text-slate-400">{c.comp_number} · {c.bid_count||0} {t('عروض')}</p>
                 </div>
                 <p className="text-xs font-bold flex-shrink-0 text-emerald-600">
                   {c.budget ? `SAR ${Number(c.budget).toLocaleString()}` : '—'}
@@ -223,6 +226,7 @@ export default function Dashboard() {
 }
 
 export function StatusBadge({status}) {
+  const { t } = useLang();
   const map = {
     open:      ['مفتوح', '#0D9488', '#CCFBF1'],
     closed:    ['مغلق',  '#64748B', '#F1F5F9'],
@@ -235,6 +239,6 @@ export function StatusBadge({status}) {
   const [label,color,bg] = map[status] || ['—','#64748B','#F1F5F9'];
   return (
     <span className="text-xs font-bold px-2.5 py-1 rounded-lg flex-shrink-0"
-      style={{color, background:bg}}>{label}</span>
+      style={{color, background:bg}}>{t(label)}</span>
   );
 }
