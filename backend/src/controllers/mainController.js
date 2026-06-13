@@ -387,7 +387,7 @@ exports.fundByPlatform = async (req, res) => {
   try {
     await client.query('BEGIN');
     const { financing_request_id } = req.params;
-    const { monthly_rate, duration_days, earnest_amount } = req.body;
+    const { monthly_rate, duration_days, earnest_amount, contract, promissory } = req.body;
     const { rows: fr } = await client.query(`SELECT * FROM financing_requests WHERE id=$1 AND status='open'`, [financing_request_id]);
     if (!fr.length) { await client.query('ROLLBACK'); return res.status(404).json({ success:false, message:'طلب التمويل غير متاح أو مُموّل مسبقاً' }); }
     const request = fr[0];
@@ -404,6 +404,8 @@ exports.fundByPlatform = async (req, res) => {
     await client.query(`UPDATE financing_requests SET status='funded',selected_bid_id=$1,financing_type='fund' WHERE id=$2`, [bid.id, financing_request_id]);
     await client.query(`UPDATE invoices SET status='financed' WHERE id=$1`, [request.invoice_id]);
     await client.query(`UPDATE financing_requests SET earnest_amount=$1 WHERE id=$2`, [Number(earnest_amount) || 0, financing_request_id]);
+    await client.query(`UPDATE financing_requests SET contract_url=$1,contract_name=$2,promissory_url=$3,promissory_name=$4 WHERE id=$5`,
+      [contract && contract.url || null, contract && contract.name || null, promissory && promissory.url || null, promissory && promissory.name || null, financing_request_id]);
     if (request.requester_id) {
       const months  = Math.max(1, Math.round(days / 30));
       const perInst = Math.round((amount * (1 + rate * months) / months) * 100) / 100;
@@ -444,4 +446,36 @@ exports.listDeals = async (req, res) => {
     `, params);
     res.json({ success: true, data: rows });
   } catch (err) { res.status(500).json({ success:false, message:'خطأ في الخادم' }); }
+};
+
+
+exports.signAgreement = async (req, res) => {
+  try {
+    const { signed_contract, signed_promissory } = req.body;
+    const { rows } = await pool.query(
+      `UPDATE financing_requests SET signed_contract_url=$1, signed_contract_name=$2, signed_promissory_url=$3, signed_promissory_name=$4, signed_at=NOW() WHERE id=$5 AND requester_id=$6 RETURNING id`,
+      [signed_contract && signed_contract.url || null, signed_contract && signed_contract.name || null, signed_promissory && signed_promissory.url || null, signed_promissory && signed_promissory.name || null, req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(400).json({ success: false, message: 'تعذّر حفظ التوقيع' });
+    res.json({ success: true, message: 'تم توقيع المستندات وإرفاقها للممول' });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.listAgreements = async (req, res) => {
+  try {
+    const isFin = ['admin','owner','investor'].includes(req.user.role);
+    const where  = isFin ? 'fr.contract_url IS NOT NULL' : 'fr.requester_id=$1 AND fr.contract_url IS NOT NULL';
+    const params = isFin ? [] : [req.user.id];
+    const { rows } = await pool.query(`
+      SELECT fr.id, fr.requested_amount, fr.contract_url, fr.contract_name, fr.promissory_url, fr.promissory_name,
+             fr.signed_contract_url, fr.signed_contract_name, fr.signed_promissory_url, fr.signed_promissory_name, fr.signed_at,
+             i.invoice_number, u.company_name AS buyer_name
+      FROM financing_requests fr
+      JOIN invoices i ON i.id=fr.invoice_id
+      JOIN users u ON u.id=fr.requester_id
+      WHERE ${where}
+      ORDER BY fr.created_at DESC
+    `, params);
+    res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };

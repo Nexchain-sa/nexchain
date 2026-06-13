@@ -7,7 +7,7 @@ import { useLang } from '../context/LanguageContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -21,6 +21,7 @@ const navItems = {
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
+    { to:'/agreements',   icon:FileSignature,    label:'العقود' },
   ],
   supplier: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
@@ -33,6 +34,7 @@ const navItems = {
   investor: [
     { to:'/dashboard',  icon:LayoutDashboard, label:'لوحة التحكم' },
     { to:'/financing',  icon:Banknote,        label:'فرص التمويل' },
+    { to:'/agreements', icon:FileSignature,   label:'العقود' },
   ],
   admin: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
@@ -40,6 +42,7 @@ const navItems = {
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
+    { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/admin',        icon:Users,            label:'إدارة المستخدمين' },
@@ -50,6 +53,7 @@ const navItems = {
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
+    { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/admin',        icon:ShieldCheck,      label:'إدارة المنصة' },

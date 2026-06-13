@@ -44,6 +44,8 @@ router.get ('/installments',             auth, mainC.listInstallments);
 router.post('/installments/:id/pay',     auth, mainC.payInstallment);
 router.put ('/installments/:id/confirm', auth, requireRole('admin','owner'), mainC.confirmInstallment);
 router.get ('/deals', auth, mainC.listDeals);
+router.get ('/financing/agreements', auth, mainC.listAgreements);
+router.put ('/financing/requests/:id/sign', auth, mainC.signAgreement);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);

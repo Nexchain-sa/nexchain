@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { financingAPI, invoiceAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { Banknote, TrendingUp, Shield, Clock, Landmark } from 'lucide-react';
+import { Banknote, TrendingUp, Shield, Clock, Landmark, Upload, FileText, X } from 'lucide-react';
+import { uploadToCloudinary } from '../config/cloudinary';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
 
@@ -18,6 +19,14 @@ export default function Financing() {
   const [fundModal, setFundModal] = useState(null);
   const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90', earnest_amount:'' });
   const [funding, setFunding] = useState(false);
+  const [contract, setContract] = useState(null);
+  const [promissory, setPromissory] = useState(null);
+  const [upDoc, setUpDoc] = useState(null);
+  const upAgr = async (which, file) => {
+    setUpDoc(which);
+    try { const u = await uploadToCloudinary(file); which==='c'?setContract(u):setPromissory(u); toast.success(t('تم رفع المستند')); }
+    catch(e){ toast.error(e.message||t('فشل الرفع')); } finally { setUpDoc(null); }
+  };
   const isAdmin = ['admin','owner'].includes(user?.role);
 
   const loadRequests = () => financingAPI.listRequests().then(r=>setRequests(r.data.data||[])).catch(()=>{});
@@ -40,9 +49,9 @@ export default function Financing() {
   const fundByPlatform = async (e) => {
     e.preventDefault(); setFunding(true);
     try {
-      await financingAPI.fundByPlatform(fundModal.id, fundForm);
+      await financingAPI.fundByPlatform(fundModal.id, { ...fundForm, contract, promissory });
       toast.success(t('تم تمويل الصفقة من صندوق المنصة!'));
-      setFundModal(null); loadRequests();
+      setFundModal(null); setContract(null); setPromissory(null); loadRequests();
     } catch(err) { toast.error(err.response?.data?.message||t('خطأ')); }
     finally { setFunding(false); }
   };
@@ -108,7 +117,7 @@ export default function Financing() {
                     </button>
                   )}
                   {isAdmin && (
-                    <button onClick={()=>setFundModal(r)} className="px-4 py-2.5 rounded-xl bg-[#0D9488] text-sm font-bold hover:opacity-90 shadow-lg !text-white flex items-center gap-1.5 justify-center">
+                    <button onClick={()=>{setContract(null);setPromissory(null);setFundModal(r);}} className="px-4 py-2.5 rounded-xl bg-[#0D9488] text-sm font-bold hover:opacity-90 shadow-lg !text-white flex items-center gap-1.5 justify-center">
                       <Landmark size={15}/> {t('تمويل من صندوق المنصة')}
                     </button>
                   )}
@@ -201,6 +210,19 @@ export default function Financing() {
             </div>
             <div><label className="text-xs text-slate-500 mb-1.5 block">{t('مبلغ الجدية (ر.س) — اختياري')}</label>
               <input type="number" className={inp} value={fundForm.earnest_amount} onChange={e=>setFundForm({...fundForm,earnest_amount:e.target.value})} placeholder="0"/></div>
+            <div className="grid grid-cols-2 gap-3">
+              {[['c','العقد',contract],['p','سند لأمر',promissory]].map(([k,lbl,doc])=>(
+                <div key={k}>
+                  <label className="text-xs text-slate-500 mb-1.5 block">{t(lbl)} *</label>
+                  <label className="flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs cursor-pointer border-2 border-dashed" style={{borderColor: doc?'#059669':'#C7CBE8', color: doc?'#059669':'#4F46E5', background:'#F8FAFC'}}>
+                    {doc ? <FileText size={14}/> : <Upload size={14}/>}
+                    <span className="truncate">{upDoc===k ? t('جارٍ...') : (doc ? doc.name : t('رفع'))}</span>
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e=>e.target.files[0] && upAgr(k, e.target.files[0])}/>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400">{t('يرفق الممول العقد وسند لأمر؛ يوقّعهما المشتري ويعيد رفعهما من صفحة العقود.')}</p>
             <div className="flex gap-3">
               <button type="submit" disabled={funding} className="flex-1 py-2.5 rounded-xl bg-[#0D9488] font-bold hover:opacity-90 disabled:opacity-50 !text-white">
                 {funding?'...':t('تأكيد التمويل من الصندوق')}

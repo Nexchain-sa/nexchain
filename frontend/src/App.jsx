@@ -16,6 +16,7 @@ import Financing  from './pages/Financing';
 import Invoices   from './pages/Invoices';
 import Installments from './pages/Installments';
 import Deals       from './pages/Deals';
+import Agreements  from './pages/Agreements';
 import AdminPanel from './pages/AdminPanel';
 import Profile    from './pages/Profile';
 import Layout     from './components/Layout';
@@ -51,6 +52,7 @@ const App = () => (
           <Route path="invoices"     element={<Invoices />} />
           <Route path="installments" element={<Installments />} />
           <Route path="deals"        element={<Deals />} />
+          <Route path="agreements"   element={<Agreements />} />
           <Route path="profile"      element={<Profile />} />
           <Route path="admin"        element={<ProtectedRoute roles={['admin','owner']}><AdminPanel /></ProtectedRoute>} />
         </Route>
