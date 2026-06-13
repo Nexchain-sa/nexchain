@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 // Pages
 import Login      from './pages/Login';
@@ -28,7 +29,8 @@ const ProtectedRoute = ({ children, roles }) => {
 };
 
 const App = () => (
-  <BrowserRouter>
+  <LanguageProvider>
+    <BrowserRouter>
     <AuthProvider>
       <Toaster position="bottom-left" toastOptions={{
         style: { background:'#1E293B', color:'#E8EAF6', border:'1px solid #EEF2FF', fontFamily:'Tajawal,sans-serif', direction:'rtl' },
@@ -55,7 +57,8 @@ const App = () => (
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AuthProvider>
-  </BrowserRouter>
+    </BrowserRouter>
+  </LanguageProvider>
 );
 
 export default App;
