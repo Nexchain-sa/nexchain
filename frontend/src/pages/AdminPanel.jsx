@@ -120,7 +120,7 @@ export function AdminPanel() {
                         <a key={i} href={d.url} target="_blank" rel="noreferrer"
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:opacity-80"
                           style={{ background:'#EEF2FF', color:'#4F46E5' }}>
-                          <FileText size={11}/> مستند {i+1}
+                          <FileText size={11}/> {d.label || `مستند ${i+1}`}
                         </a>
                       ))}
                     </div>

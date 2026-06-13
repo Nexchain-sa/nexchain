@@ -36,7 +36,7 @@ router.post('/invoices',                auth, requireRole('buyer','supplier'), m
 // ── FINANCING ─────────────────────────────────────────────────────────────────
 router.post('/financing/request',                           auth, mainC.requestFinancing);
 router.get ('/financing/requests',                          auth, mainC.listFinancingRequests);
-router.post('/financing/requests/:financing_request_id/bid',auth, requireRole('investor','admin'), mainC.submitFinancingBid);
+router.post('/financing/requests/:financing_request_id/bid',auth, requireRole('investor','admin','owner'), mainC.submitFinancingBid);
 router.post('/financing/bids/:bid_id/accept',               auth, mainC.acceptFinancingBid);
 router.post('/financing/requests/:financing_request_id/fund-by-platform', auth, requireRole('admin','owner'), mainC.fundByPlatform);
 
@@ -47,7 +47,7 @@ router.get ('/deals', auth, mainC.listDeals);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
-router.post('/competitions',                          auth, requireRole('buyer','admin'), mainC.createCompetition);
+router.post('/competitions',                          auth, requireRole('buyer','admin','owner'), mainC.createCompetition);
 router.post('/competitions/:competition_id/bid',      auth, requireRole('supplier'), mainC.submitCompBid);
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ router.get('/notifications',     auth, mainC.getNotifications);
 router.put('/notifications/read',auth, mainC.markRead);
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
-router.get('/admin/users',           auth, requireRole('admin'), mainC.adminUsers);
-router.put('/admin/users/:id/approve',auth,requireRole('admin'), mainC.approveUser);
+router.get('/admin/users',           auth, requireRole('admin','owner'), mainC.adminUsers);
+router.put('/admin/users/:id/approve',auth,requireRole('admin','owner'), mainC.approveUser);
 
 module.exports = router;

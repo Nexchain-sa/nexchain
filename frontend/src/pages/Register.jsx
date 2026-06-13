@@ -2,41 +2,54 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 import { uploadToCloudinary } from '../config/cloudinary';
-import { Upload, FileText, X } from 'lucide-react';
+import { Upload, FileText, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const REQUIRED_DOCS = [
+  { key:'cr',         label:'السجل التجاري' },
+  { key:'articles',   label:'عقد التأسيس' },
+  { key:'owner_id',   label:'هوية الملاك' },
+  { key:'financials', label:'آخر قوائم مالية معتمدة' },
+  { key:'profile',    label:'الملف التعريفي للشركة' },
+  { key:'vat',        label:'شهادة ضريبة القيمة المضافة' },
+  { key:'zakat',      label:'شهادة الزكاة' },
+  { key:'bank',       label:'كشف الحساب البنكي' },
+];
 
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState(null);
+  const [docs, setDocs] = useState({});
   const [form, setForm] = useState({
     name:'', email:'', password:'', confirm:'',
-    role:'buyer', company_name:'', phone:'', city:'', documents:[]
+    role:'buyer', company_name:'', phone:'', city:''
   });
 
   const set = (k,v) => setForm(f => ({...f,[k]:v}));
 
-  const onFiles = async (files) => {
-    setUploading(true);
+  const uploadDoc = async (key, file) => {
+    setUploadingKey(key);
     try {
-      const uploaded = [];
-      for (const f of Array.from(files)) uploaded.push(await uploadToCloudinary(f));
-      setForm(prev => ({ ...prev, documents: [...prev.documents, ...uploaded] }));
+      const up = await uploadToCloudinary(file);
+      setDocs(prev => ({ ...prev, [key]: up }));
       toast.success('تم رفع المستند');
     } catch (e) { toast.error(e.message || 'فشل الرفع'); }
-    finally { setUploading(false); }
+    finally { setUploadingKey(null); }
   };
-  const removeDoc = (i) => setForm(prev => ({ ...prev, documents: prev.documents.filter((_,x)=>x!==i) }));
+  const removeDoc = (key) => setDocs(prev => { const n = {...prev}; delete n[key]; return n; });
 
   const handle = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error('كلمتا المرور غير متطابقتين');
+    const missing = REQUIRED_DOCS.filter(d => !docs[d.key]);
+    if (missing.length) return toast.error('يجب رفع جميع المستندات المطلوبة: ' + missing.map(m=>m.label).join('، '));
     setLoading(true);
     try {
       await authAPI.register({
         name:form.name, email:form.email, password:form.password,
         role:form.role, company_name:form.company_name, phone:form.phone, city:form.city,
-        documents: form.documents
+        documents: REQUIRED_DOCS.map(d => ({ key:d.key, label:d.label, url:docs[d.key].url, name:docs[d.key].name }))
       });
       toast.success('تم إنشاء الحساب! حسابك قيد المراجعة من الإدارة');
       navigate('/login');
@@ -143,29 +156,33 @@ export default function Register() {
             </div>
 
             <div>
-              <label className="block text-xs mb-1.5 font-medium" style={{ color:'#8892B0' }}>المستندات المطلوبة (سجل تجاري، بطاقة، قوائم مالية...)</label>
-              <label className="flex items-center justify-center gap-2 w-full rounded-xl px-4 py-3 text-sm cursor-pointer border-2 border-dashed transition-colors"
-                style={{ borderColor:'#C7CBE8', color:'#4F46E5', background:'#F8FAFC' }}>
-                <Upload size={16}/>
-                <span>{uploading ? 'جارٍ الرفع...' : 'اختر الملفات (PDF / صور)'}</span>
-                <input type="file" multiple accept="image/*,application/pdf" className="hidden"
-                  disabled={uploading}
-                  onChange={e=>e.target.files.length && onFiles(e.target.files)}/>
-              </label>
-              {form.documents.length>0 && (
-                <div className="mt-2 space-y-1.5">
-                  {form.documents.map((d,i)=>(
-                    <div key={i} className="flex items-center gap-2 text-xs rounded-lg px-3 py-2" style={{ background:'#EEF2FF' }}>
-                      <FileText size={14} style={{color:'#4F46E5'}}/>
-                      <a href={d.url} target="_blank" rel="noreferrer" className="flex-1 truncate text-slate-700 hover:underline">{d.name}</a>
-                      <button type="button" onClick={()=>removeDoc(i)} className="text-slate-400 hover:text-red-500"><X size={14}/></button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-medium" style={{ color:'#8892B0' }}>المستندات الرسمية المطلوبة (إلزامية)</label>
+                <span className="text-xs font-bold" style={{ color: Object.keys(docs).length === REQUIRED_DOCS.length ? '#059669' : '#D97706' }}>
+                  {Object.keys(docs).length}/{REQUIRED_DOCS.length}
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {REQUIRED_DOCS.map(d => {
+                  const up = docs[d.key]; const isUp = uploadingKey === d.key;
+                  return (
+                    <label key={d.key} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs cursor-pointer border transition-colors"
+                      style={{ borderColor: up ? '#059669' : '#E5E7EF', background: up ? '#ECFDF5' : '#FFFFFF' }}>
+                      {up ? <Check size={15} style={{color:'#059669'}}/> : <Upload size={15} style={{color:'#4F46E5'}}/>}
+                      <span className="flex-1 font-medium truncate" style={{ color: up ? '#059669' : '#475569' }}>{d.label}</span>
+                      {up
+                        ? <button type="button" onClick={e=>{e.preventDefault(); removeDoc(d.key);}} className="text-slate-400 hover:text-red-500 flex-shrink-0"><X size={13}/></button>
+                        : <span className="text-slate-400 flex-shrink-0">{isUp ? 'جارٍ...' : 'رفع'}</span>}
+                      <input type="file" accept="image/*,application/pdf" className="hidden" disabled={isUp}
+                        onChange={e=>e.target.files[0] && uploadDoc(d.key, e.target.files[0])}/>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] mt-1.5" style={{ color:'#94A3B8' }}>يجب رفع جميع المستندات الثمانية لإتمام التسجيل (PDF أو صور).</p>
             </div>
 
-            <button type="submit" disabled={loading || uploading}
+            <button type="submit" disabled={loading || uploadingKey}
               className="w-full py-3 rounded-xl text-white font-bold hover:opacity-90 transition-opacity disabled:opacity-50 mt-2"
               style={{ background:'linear-gradient(to left, #4F46E5, #4F46E5)', boxShadow:'0 0 20px #EEF2FF' }}>
               {loading ? 'جارٍ الإنشاء...' : 'إنشاء الحساب'}
