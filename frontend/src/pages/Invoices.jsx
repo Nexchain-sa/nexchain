@@ -3,6 +3,7 @@ import { invoiceAPI, financingAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { Receipt, Plus, Banknote, Building2, User, Landmark, X, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLang } from '../context/LanguageContext';
 
 const FINANCING_TYPES = [
   {
@@ -69,8 +70,8 @@ export function Invoices() {
     e.preventDefault(); setSub(true);
     try {
       await invoiceAPI.create(form);
-      toast.success('تم إنشاء الفاتورة!'); setShow(false); load();
-    } catch(err) { toast.error(err.response?.data?.message || 'خطأ'); }
+      toast.success(t('تم إنشاء الفاتورة!')); setShow(false); load();
+    } catch(err) { toast.error(err.response?.data?.message || t('خطأ')); }
     finally { setSub(false); }
   };
 
@@ -82,7 +83,7 @@ export function Invoices() {
   };
 
   const submitFin = async () => {
-    if (!finType) return toast.error('اختر جهة التمويل');
+    if (!finType) return toast.error(t('اختر جهة التمويل'));
     setFinSub(true);
     try {
       await financingAPI.request({
@@ -92,13 +93,14 @@ export function Invoices() {
       });
       setFinSuccess(true);
       load();
-      toast.success('تم تقديم طلب التمويل بنجاح!');
-    } catch(err) { toast.error(err.response?.data?.message || 'خطأ في الطلب'); }
+      toast.success(t('تم تقديم طلب التمويل بنجاح!'));
+    } catch(err) { toast.error(err.response?.data?.message || t('خطأ في الطلب')); }
     finally { setFinSub(false); }
   };
 
+  const { t, dir, lang } = useLang();
   return (
-    <div className="font-arabic space-y-5" dir="rtl">
+    <div className="font-arabic space-y-5" dir={dir}>
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -116,21 +118,21 @@ export function Invoices() {
       {/* Create form */}
       {showForm && (
         <form onSubmit={create} className="bg-white border border-[#F0FDFA] rounded-2xl p-5 space-y-3">
-          <h3 className="font-bold text-slate-800">إنشاء فاتورة جديدة</h3>
+          <h3 className="font-bold text-slate-800">{t('إنشاء فاتورة جديدة')}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">المبلغ (SAR) *</label>
+              <label className="text-xs text-slate-500 mb-1.5 block">{t('المبلغ (SAR) *')}</label>
               <input required type="number" className={inp} value={form.amount} onChange={e => setForm({...form, amount: e.target.value})}/>
             </div>
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">تاريخ الاستحقاق *</label>
+              <label className="text-xs text-slate-500 mb-1.5 block">{t('تاريخ الاستحقاق *')}</label>
               <input required type="date" className={inp} value={form.due_date} onChange={e => setForm({...form, due_date: e.target.value})}/>
             </div>
           </div>
-          <textarea className={inp} rows={2} placeholder="ملاحظات..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}/>
+          <textarea className={inp} rows={2} placeholder={t('ملاحظات...')} value={form.notes} onChange={e => setForm({...form, notes: e.target.value})}/>
           <button type="submit" disabled={sub}
             className="px-6 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 font-bold text-sm hover:opacity-90 disabled:opacity-50 !text-white">
-            {sub ? '...' : 'إنشاء الفاتورة'}
+            {sub ? '...' : t('إنشاء الفاتورة')}
           </button>
         </form>
       )}
@@ -141,13 +143,13 @@ export function Invoices() {
           <thead>
             <tr className="border-b border-[#EEF2FF]">
               {['رقم الفاتورة','المشتري','المورد','المبلغ','الاستحقاق','الحالة','تمويل الفاتورة'].map(h => (
-                <th key={h} className="text-right px-4 py-3 text-slate-500 text-xs font-bold">{h}</th>
+                <th key={h} className="text-right px-4 py-3 text-slate-500 text-xs font-bold">{t(h)}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-[#EEF2FF]">
-            {loading && <tr><td colSpan={7} className="text-center py-10 text-slate-500">جارٍ التحميل...</td></tr>}
-            {!loading && invs.length === 0 && <tr><td colSpan={7} className="text-center py-10 text-slate-500">لا توجد فواتير</td></tr>}
+            {loading && <tr><td colSpan={7} className="text-center py-10 text-slate-500">{t('جارٍ التحميل...')}</td></tr>}
+            {!loading && invs.length === 0 && <tr><td colSpan={7} className="text-center py-10 text-slate-500">{t('لا توجد فواتير')}</td></tr>}
             {invs.map(inv => {
               const [label, color] = statusMap[inv.status] || ['—','#90A4AE'];
               const canFinance = inv.status === 'pending' && (user?.role === 'buyer' || user?.role === 'supplier');
@@ -170,9 +172,9 @@ export function Invoices() {
                         <Banknote size={13}/> طلب تمويل
                       </button>
                     ) : inv.status === 'financing_requested' ? (
-                      <span className="text-xs text-[#0D9488] font-bold">🕐 قيد المراجعة</span>
+                      <span className="text-xs text-[#0D9488] font-bold">{t('🕐 قيد المراجعة')}</span>
                     ) : inv.status === 'financed' ? (
-                      <span className="text-xs text-[#4F46E5] font-bold">✅ ممولة</span>
+                      <span className="text-xs text-[#4F46E5] font-bold">{t('✅ ممولة')}</span>
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )}
@@ -195,7 +197,7 @@ export function Invoices() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#EEF2FF]">
               <div className="flex items-center gap-2">
                 <Banknote size={20} className="text-[#059669]"/>
-                <h3 className="font-bold text-slate-800 text-lg">تمويل الفاتورة</h3>
+                <h3 className="font-bold text-slate-800 text-lg">{t('تمويل الفاتورة')}</h3>
               </div>
               <button onClick={() => setFinModal(null)} className="text-slate-500 hover:text-slate-800 transition-colors">
                 <X size={20}/>
@@ -208,39 +210,39 @@ export function Invoices() {
                 {/* Invoice info */}
                 <div className="bg-[#F4F6FB] rounded-xl p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-slate-500">رقم الفاتورة</p>
+                    <p className="text-xs text-slate-500">{t('رقم الفاتورة')}</p>
                     <p className="text-[#4F46E5] font-mono font-bold">{finModal.invoice_number}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">المبلغ الكلي</p>
+                    <p className="text-xs text-slate-500">{t('المبلغ الكلي')}</p>
                     <p className="text-[#059669] font-bold text-lg">SAR {Number(finModal.amount).toLocaleString()}</p>
                   </div>
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="text-xs text-slate-500 mb-1.5 block">المبلغ المطلوب تمويله (SAR)</label>
+                  <label className="text-xs text-slate-500 mb-1.5 block">{t('المبلغ المطلوب تمويله (SAR)')}</label>
                   <input type="number" className={inp} value={finAmount}
                     max={finModal.amount} onChange={e => setFinAmount(e.target.value)}/>
                 </div>
 
                 {/* Type selection */}
                 <div>
-                  <p className="text-xs text-slate-500 mb-3 font-bold">اختر جهة التمويل</p>
+                  <p className="text-xs text-slate-500 mb-3 font-bold">{t('اختر جهة التمويل')}</p>
                   <div className="space-y-3">
                     {FINANCING_TYPES.map(({ id, icon: Icon, label, desc, color, bg }) => (
                       <button key={id} type="button" onClick={() => setFinType(id)}
                         className="w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-right"
                         style={{
-                          background: finType === id ? bg : '#1E293B',
+                          background: finType === id ? bg : '#FFFFFF',
                           borderColor: finType === id ? color : '#E5E7EF',
                         }}>
                         <div className="p-2.5 rounded-xl flex-shrink-0" style={{ background: bg }}>
                           <Icon size={22} style={{ color }}/>
                         </div>
                         <div className="flex-1 text-right">
-                          <p className="font-bold text-slate-800 text-sm">{label}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                          <p className="font-bold text-slate-800 text-sm">{t(label)}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{t(desc)}</p>
                         </div>
                         <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
                           style={{ borderColor: finType === id ? color : '#E5E7EF', background: finType === id ? color : 'transparent' }}>
@@ -254,7 +256,7 @@ export function Invoices() {
                 {/* Note */}
                 {finType && (
                   <div className="bg-[#EEF2FF] border border-[#EEF2FF] rounded-xl p-3 text-xs text-slate-500">
-                    {FINANCING_TYPES.find(t => t.id === finType)?.note}
+                    {t(FINANCING_TYPES.find(ft => ft.id === finType)?.note)}
                   </div>
                 )}
 
@@ -263,7 +265,7 @@ export function Invoices() {
                   <button onClick={submitFin} disabled={finSub || !finType}
                     className="flex-1 py-3 rounded-xl font-bold text-sm text-slate-800 hover:opacity-90 disabled:opacity-40 transition-all"
                     style={{ background: 'linear-gradient(to left,#059669,#4F46E5)' }}>
-                    {finSub ? 'جارٍ الإرسال...' : '📤 تقديم طلب التمويل'}
+                    {finSub ? t('جارٍ الإرسال...') : t('📤 تقديم طلب التمويل')}
                   </button>
                   <button onClick={() => setFinModal(null)}
                     className="px-5 py-3 rounded-xl border border-[#E5E7EF] text-slate-500 hover:text-slate-800 text-sm transition-all">
@@ -276,7 +278,7 @@ export function Invoices() {
                 <div className="w-16 h-16 rounded-full bg-[#ECFDF5] flex items-center justify-center mx-auto">
                   <CheckCircle size={36} className="text-[#059669]"/>
                 </div>
-                <h4 className="text-slate-800 font-bold text-xl">تم تقديم الطلب بنجاح!</h4>
+                <h4 className="text-slate-800 font-bold text-xl">{t('تم تقديم الطلب بنجاح!')}</h4>
                 <p className="text-slate-500 text-sm">
                   سيتم مراجعة طلب تمويل الفاتورة{' '}
                   <span className="text-[#4F46E5] font-mono">{finModal.invoice_number}</span>{' '}

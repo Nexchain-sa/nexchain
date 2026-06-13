@@ -28,17 +28,18 @@ export function RFQList() {
     color: '#4F46E5',
   };
 
+  const { t, dir, lang } = useLang();
   return (
-    <div className="font-arabic space-y-5" dir="rtl">
+    <div className="font-arabic space-y-5" dir={dir}>
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-slate-800">
-          {user?.role==='buyer' ? 'طلبات الشراء' : 'الفرص المتاحة'}
+          {user?.role==='buyer' ? t('طلبات الشراء') : t('الفرص المتاحة')}
         </h1>
         {user?.role==='buyer' && (
           <Link to="/rfqs/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-slate-800 text-sm font-bold hover:opacity-90"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl !text-white text-sm font-bold hover:opacity-90"
             style={{ background:'linear-gradient(to left, #4F46E5, #4F46E5)', boxShadow:'0 0 16px #EEF2FF' }}>
-            <Plus size={15}/> طلب جديد
+            <Plus size={15}/> {t('طلب جديد')}
           </Link>
         )}
       </div>
@@ -48,7 +49,7 @@ export function RFQList() {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color:'#8892B0' }}/>
           <input value={filters.search} onChange={e=>setF({...filters,search:e.target.value})}
-            placeholder="بحث..."
+            placeholder={t('بحث...')}
             className="w-full rounded-xl pr-9 pl-4 py-2.5 text-sm placeholder-slate-400 focus:outline-none transition-colors"
             style={inputStyle}
             onFocus={e=>e.target.style.borderColor='#4F46E5'}
@@ -59,17 +60,17 @@ export function RFQList() {
           style={inputStyle}
           onFocus={e=>e.target.style.borderColor='#4F46E5'}
           onBlur={e=>e.target.style.borderColor='#EEF2FF'}>
-          <option value="">جميع الحالات</option>
-          <option value="open">مفتوح</option>
-          <option value="closed">مغلق</option>
-          <option value="awarded">مُرسى</option>
+          <option value="">{t('جميع الحالات')}</option>
+          <option value="open">{t('مفتوح')}</option>
+          <option value="closed">{t('مغلق')}</option>
+          <option value="awarded">{t('مُرسى')}</option>
         </select>
         <select value={filters.category_id} onChange={e=>setF({...filters,category_id:e.target.value})}
           className="rounded-xl px-4 py-2.5 text-sm focus:outline-none transition-colors"
           style={inputStyle}
           onFocus={e=>e.target.style.borderColor='#4F46E5'}
           onBlur={e=>e.target.style.borderColor='#EEF2FF'}>
-          <option value="">جميع الفئات</option>
+          <option value="">{t('جميع الفئات')}</option>
           {cats.map(c=><option key={c.id} value={c.id}>{c.name_ar}</option>)}
         </select>
       </div>
@@ -82,21 +83,21 @@ export function RFQList() {
             <tr style={{ borderBottom:'1px solid #EEF2FF' }}>
               {['رقم الطلب','العنوان','الجهة','الكمية','ينتهي','العروض','الحالة',''].map(h=>(
                 <th key={h} className="text-right px-4 py-3 text-xs font-semibold"
-                  style={{ color:'#8892B0' }}>{h}</th>
+                  style={{ color:'#8892B0' }}>{t(h)}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} className="text-center py-10" style={{ color:'#8892B0' }}>جارٍ التحميل...</td></tr>
+              <tr><td colSpan={8} className="text-center py-10" style={{ color:'#8892B0' }}>{t('جارٍ التحميل...')}</td></tr>
             )}
             {!loading && rfqs.length===0 && (
-              <tr><td colSpan={8} className="text-center py-10" style={{ color:'#8892B0' }}>لا توجد طلبات</td></tr>
+              <tr><td colSpan={8} className="text-center py-10" style={{ color:'#8892B0' }}>{t('لا توجد طلبات')}</td></tr>
             )}
             {rfqs.map(r=>(
               <tr key={r.id} className="transition-colors"
                 style={{ borderTop:'1px solid #EEF2FF' }}
-                onMouseEnter={e=>e.currentTarget.style.background='#1E293B'}
+                onMouseEnter={e=>e.currentTarget.style.background='#F4F6FB'}
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                 <td className="px-4 py-3 font-mono text-xs" style={{ color:'#4F46E5' }}>{r.rfq_number}</td>
                 <td className="px-4 py-3 text-slate-800 font-medium max-w-[200px] truncate">{r.title}</td>

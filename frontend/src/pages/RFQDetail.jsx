@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from './Dashboard';
 import { Star, Clock, DollarSign, Package, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useLang } from '../context/LanguageContext';
 
 export default function RFQDetail() {
   const { id } = useParams();
@@ -21,7 +22,7 @@ export default function RFQDetail() {
   const load = () => {
     Promise.all([rfqAPI.get(id), rfqAPI.getQuotes(id)])
       .then(([r,q]) => { setRfq(r.data.data); setQuotes(q.data.data||[]); })
-      .catch(() => toast.error('خطأ في تحميل الطلب'))
+      .catch(() => toast.error(t('خطأ في تحميل الطلب')))
       .finally(() => setL(false));
   };
 
@@ -31,30 +32,31 @@ export default function RFQDetail() {
     e.preventDefault(); setSub(true);
     try {
       await rfqAPI.submitQuote(id, quoteForm);
-      toast.success('تم تقديم عرضك بنجاح!');
+      toast.success(t('تم تقديم عرضك بنجاح!'));
       setShowQF(false); load();
-    } catch(err) { toast.error(err.response?.data?.message || 'خطأ'); }
+    } catch(err) { toast.error(err.response?.data?.message || t('خطأ')); }
     finally { setSub(false); }
   };
 
   const award = async (quoteId) => {
-    if (!window.confirm('هل أنت متأكد من ترسية هذا العطاء؟')) return;
+    if (!window.confirm(t('هل أنت متأكد من ترسية هذا العطاء؟'))) return;
     setAward(quoteId);
     try {
       await rfqAPI.award(id, quoteId);
-      toast.success('تم ترسية العطاء وإنشاء أمر الشراء!');
+      toast.success(t('تم ترسية العطاء وإنشاء أمر الشراء!'));
       load();
-    } catch(err) { toast.error(err.response?.data?.message || 'خطأ'); }
+    } catch(err) { toast.error(err.response?.data?.message || t('خطأ')); }
     finally { setAward(null); }
   };
 
   const inp = "w-full bg-[#F4F6FB] border border-[#EEF2FF] rounded-xl px-4 py-2.5 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#4F46E5] text-sm";
 
-  if (loading) return <div className="text-center py-20 text-slate-500 font-arabic">جارٍ التحميل...</div>;
-  if (!rfq)    return <div className="text-center py-20 text-red-400 font-arabic">الطلب غير موجود</div>;
+  if (loading) return <div className="text-center py-20 text-slate-500 font-arabic">{t('جارٍ التحميل...')}</div>;
+  if (!rfq)    return <div className="text-center py-20 text-red-400 font-arabic">{t('الطلب غير موجود')}</div>;
 
+  const { t, dir, lang } = useLang();
   return (
-    <div className="font-arabic space-y-6 max-w-4xl" dir="rtl">
+    <div className="font-arabic space-y-6 max-w-4xl" dir={dir}>
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -68,14 +70,14 @@ export default function RFQDetail() {
         {user?.role === 'supplier' && rfq.status === 'open' && (
           <button onClick={() => setShowQF(!showQuoteForm)}
             className="px-5 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 text-sm font-bold hover:opacity-90 shadow-lg flex-shrink-0 !text-white">
-            {showQuoteForm ? 'إلغاء' : '📤 تقديم عرض'}
+            {showQuoteForm ? t('إلغاء') : t('📤 تقديم عرض')}
           </button>
         )}
       </div>
 
       {/* RFQ details */}
       <div className="bg-white border border-[#EEF2FF] rounded-2xl p-5">
-        <h2 className="font-bold text-slate-800 mb-4">تفاصيل الطلب</h2>
+        <h2 className="font-bold text-slate-800 mb-4">{t('تفاصيل الطلب')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
           {[
             {icon:Package, label:'الكمية', value:rfq.quantity||'غير محدد'},
@@ -83,12 +85,12 @@ export default function RFQDetail() {
             {icon:Clock, label:'تاريخ الإغلاق', value:new Date(rfq.closing_date).toLocaleDateString('ar-SA')},
             {icon:Star, label:'الفئة', value:rfq.category_name||'—'},
           ].map(({icon:Icon,label,value})=>(
-            <div key={label} className="bg-[#F4F6FB] rounded-xl p-3">
+            <div key={t(label)} className="bg-[#F4F6FB] rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Icon size={13} className="text-[#4F46E5]"/>
-                <span className="text-xs text-slate-500">{label}</span>
+                <span className="text-xs text-slate-500">{t(label)}</span>
               </div>
-              <p className="text-sm font-bold text-slate-800">{value}</p>
+              <p className="text-sm font-bold text-slate-800">{t(value)}</p>
             </div>
           ))}
         </div>
@@ -98,25 +100,25 @@ export default function RFQDetail() {
       {/* Quote submission form */}
       {showQuoteForm && (
         <div className="bg-white border border-[#F0FDFA] rounded-2xl p-5">
-          <h2 className="font-bold text-slate-800 mb-4">تقديم عرض سعر</h2>
+          <h2 className="font-bold text-slate-800 mb-4">{t('تقديم عرض سعر')}</h2>
           <form onSubmit={submitQuote} className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs text-slate-500 mb-1.5 block">سعر الوحدة (SAR) *</label>
+            <div><label className="text-xs text-slate-500 mb-1.5 block">{t('سعر الوحدة (SAR) *')}</label>
               <input required type="number" className={inp} value={quoteForm.unit_price} onChange={e=>setQF({...quoteForm,unit_price:e.target.value,total_price:e.target.value})}/></div>
-            <div><label className="text-xs text-slate-500 mb-1.5 block">إجمالي العرض (SAR) *</label>
+            <div><label className="text-xs text-slate-500 mb-1.5 block">{t('إجمالي العرض (SAR) *')}</label>
               <input required type="number" className={inp} value={quoteForm.total_price} onChange={e=>setQF({...quoteForm,total_price:e.target.value})}/></div>
-            <div><label className="text-xs text-slate-500 mb-1.5 block">مدة التسليم (أيام)</label>
+            <div><label className="text-xs text-slate-500 mb-1.5 block">{t('مدة التسليم (أيام)')}</label>
               <input type="number" className={inp} value={quoteForm.delivery_days} onChange={e=>setQF({...quoteForm,delivery_days:e.target.value})}/></div>
-            <div><label className="text-xs text-slate-500 mb-1.5 block">شروط الدفع</label>
+            <div><label className="text-xs text-slate-500 mb-1.5 block">{t('شروط الدفع')}</label>
               <select className={inp} value={quoteForm.payment_terms} onChange={e=>setQF({...quoteForm,payment_terms:e.target.value})}>
-                <option>30 يوم</option><option>60 يوم</option><option>90 يوم</option><option>فوري</option>
+                <option>{t('30 يوم')}</option><option>{t('60 يوم')}</option><option>{t('90 يوم')}</option><option>{t('فوري')}</option>
               </select>
             </div>
-            <div className="col-span-2"><label className="text-xs text-slate-500 mb-1.5 block">ملاحظات</label>
+            <div className="col-span-2"><label className="text-xs text-slate-500 mb-1.5 block">{t('ملاحظات')}</label>
               <textarea className={inp} rows={3} value={quoteForm.notes} onChange={e=>setQF({...quoteForm,notes:e.target.value})}/></div>
             <div className="col-span-2">
               <button type="submit" disabled={submitting}
                 className="px-6 py-2.5 rounded-xl bg-[#4F46E5] text-slate-800 font-bold text-sm hover:opacity-90 disabled:opacity-50 shadow-lg !text-white">
-                {submitting ? 'جارٍ الإرسال...' : '✅ تقديم العرض'}
+                {submitting ? t('جارٍ الإرسال...') : t('✅ تقديم العرض')}
               </button>
             </div>
           </form>
@@ -126,30 +128,30 @@ export default function RFQDetail() {
       {/* Quotes list */}
       <div className="bg-white border border-[#EEF2FF] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#EEF2FF] flex items-center justify-between">
-          <h2 className="font-bold text-slate-800">العروض المستلمة</h2>
+          <h2 className="font-bold text-slate-800">{t('العروض المستلمة')}</h2>
           <span className="text-[#059669] text-sm font-bold">{quotes.length} عرض</span>
         </div>
         {quotes.length === 0
-          ? <p className="text-center py-10 text-slate-500 text-sm">لا توجد عروض بعد</p>
+          ? <p className="text-center py-10 text-slate-500 text-sm">{t('لا توجد عروض بعد')}</p>
           : (
             <div className="divide-y divide-[#EEF2FF]">
               {quotes.map((q, i) => (
                 <div key={q.id} className={`flex items-center gap-4 px-5 py-4 ${i===0?'bg-[#ECFDF5]':''}`}>
-                  {i===0 && <span className="text-[#059669] text-xs font-bold bg-[#ECFDF5] px-2 py-1 rounded-lg flex-shrink-0">⭐ الأفضل</span>}
+                  {i===0 && <span className="text-[#059669] text-xs font-bold bg-[#ECFDF5] px-2 py-1 rounded-lg flex-shrink-0">{t('⭐ الأفضل')}</span>}
                   <div className="flex-1">
                     <p className="text-sm font-bold text-slate-800">{q.supplier_company}</p>
-                    <p className="text-xs text-slate-500">تسليم: {q.delivery_days||'—'} يوم · {q.payment_terms||'—'}</p>
+                    <p className="text-xs text-slate-500">{t('تسليم:')} {q.delivery_days||'—'} {t('يوم')} · {q.payment_terms||'—'}</p>
                   </div>
                   <div className="text-left">
                     <p className="text-[#059669] font-bold">SAR {Number(q.total_price).toLocaleString()}</p>
-                    <p className="text-xs text-slate-500">صلاحية {q.validity_days} يوم</p>
+                    <p className="text-xs text-slate-500">{t('صلاحية')} {q.validity_days} {t('يوم')}</p>
                   </div>
                   <StatusBadge status={q.status}/>
                   {user?.role==='buyer' && rfq.status==='open' && (
                     <button onClick={()=>award(q.id)} disabled={awarding===q.id}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ECFDF5] text-[#059669] text-xs font-bold hover:bg-[#ECFDF5] transition-colors disabled:opacity-50">
                       <CheckCircle size={13}/>
-                      {awarding===q.id ? '...' : 'ترسية'}
+                      {awarding===q.id ? '...' : t('ترسية')}
                     </button>
                   )}
                 </div>
