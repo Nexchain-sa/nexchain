@@ -295,7 +295,7 @@ exports.markRead = async (req, res) => {
 exports.adminUsers = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id,name,email,role,company_name,city,phone,is_verified,is_approved,review_status,documents,rating,total_orders,created_at
+      `SELECT id,name,email,role,company_name,city,phone,is_verified,is_approved,review_status,review_note,documents,rating,total_orders,created_at
        FROM users ORDER BY created_at DESC`
     );
     res.json({ success: true, data: rows });
@@ -306,12 +306,37 @@ exports.adminUsers = async (req, res) => {
 
 exports.approveUser = async (req, res) => {
   try {
-    const rs = req.body.approve ? 'approved' : 'rejected';
+    const approve = req.body.approve;
+    const note = (req.body.note || '').toString().trim();
+    const rs = approve ? 'approved' : 'rejected';
     const { rows } = await pool.query(
-      `UPDATE users SET is_approved=$1,review_status=$2,updated_at=NOW() WHERE id=$3 RETURNING id,name,is_approved,review_status`,
-      [req.body.approve, rs, req.params.id]
+      `UPDATE users SET is_approved=$1,review_status=$2,review_note=$3,updated_at=NOW() WHERE id=$4 RETURNING id,name,email,is_approved,review_status,review_note`,
+      [approve, rs, note || null, req.params.id]
     );
-    res.json({ success: true, data: rows[0] });
+    const u = rows[0];
+    // إرسال بريد للعميل (best-effort)
+    try {
+      const { sendMail } = require('../config/mailer');
+      const subject = approve ? 'تم اعتماد حسابك في FLOWRIZ' : 'تحديث بخصوص طلب حسابك في FLOWRIZ';
+      const statusLine = approve
+        ? 'تم اعتماد حسابك بنجاح، ويمكنك الآن تسجيل الدخول واستخدام المنصة.'
+        : 'نأسف لإبلاغك بأنه تم رفض طلب حسابك في الوقت الحالي.';
+      const noteBlock = note
+        ? `<p style="background:#f4f6fb;padding:12px;border-radius:8px"><b>ملاحظات الإدارة:</b><br>${note.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p>`
+        : '';
+      const html = `<div style="font-family:Tahoma,Arial,sans-serif;direction:rtl;text-align:right;max-width:560px;margin:auto">
+        <h2 style="color:#4F46E5;margin:0 0 8px">FLOWRIZ — منصة سلاسل الإمداد الذكية</h2>
+        <p>مرحبًا ${u.name || ''}،</p>
+        <p>${statusLine}</p>
+        ${noteBlock}
+        <p style="color:#94a3b8;font-size:12px;margin-top:24px">هذه رسالة آلية من منصة FLOWRIZ، يرجى عدم الرد عليها.</p>
+      </div>`;
+      const sent = await sendMail({ to: u.email, subject, html });
+      return res.json({ success: true, data: u, emailSent: sent });
+    } catch (e) {
+      console.error('email error:', e.message);
+      return res.json({ success: true, data: u, emailSent: false });
+    }
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }

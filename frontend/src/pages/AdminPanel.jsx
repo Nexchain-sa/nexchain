@@ -11,16 +11,19 @@ export function AdminPanel() {
   const [loading, setL]     = useState(true);
   const [filter, setFilter] = useState('all');
   const [reviewUser, setReviewUser] = useState(null);
+  const [reviewNote, setReviewNote] = useState('');
+  const openReview = (u) => { setReviewNote(''); setReviewUser(u); };
 
   const load = () => {
     adminAPI.users().then(r=>{ setUsers(r.data.data||[]); setL(false); }).catch(()=>setL(false));
   };
   useEffect(()=>{ load(); },[]);
 
-  const approve = async (id, val) => {
+  const approve = async (id, val, note='') => {
     try {
-      await adminAPI.approveUser(id, val);
-      toast.success(val ? 'تم اعتماد المستخدم' : 'تم إلغاء الاعتماد');
+      const r = await adminAPI.approveUser(id, val, note);
+      const emailed = r.data?.emailSent;
+      toast.success((val ? 'تم اعتماد المستخدم' : 'تم رفض الحساب') + (emailed ? ' وإرسال إشعار بالبريد' : ''));
       load();
     } catch { toast.error('خطأ'); }
   };
@@ -28,7 +31,7 @@ export function AdminPanel() {
   const roleLabel = { buyer:'مشترٍ', supplier:'مورد', investor:'مستثمر', admin:'مدير', owner:'مالك المنصة' };
   const roleColor = { buyer:'#4F46E5', supplier:'#059669', investor:'#D97706', admin:'#4F46E5', owner:'#7C3AED' };
 
-  const reject = (id) => approve(id, false);
+  const reject = (id, note='') => approve(id, false, note);
 
   const filtered = filter==='all' ? users : users.filter(u=>
     filter==='pending' ? (u.review_status==='pending' || (!u.is_approved && u.review_status!=='rejected')) : u.role===filter
@@ -138,7 +141,7 @@ export function AdminPanel() {
                 <td className="px-4 py-3">
                   {u.role!=='admin' && u.role!=='owner' && (
                     <div className="flex gap-2">
-                      <button onClick={()=>setReviewUser(u)} title="اطّلاع ومراجعة"
+                      <button onClick={()=>openReview(u)} title="اطّلاع ومراجعة"
                         className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold hover:opacity-80"
                         style={{ background:'#EEF2FF', color:'#4F46E5' }}>
                         <Eye size={13}/> اطّلاع
@@ -170,6 +173,7 @@ export function AdminPanel() {
         const u = reviewUser;
         const docs = u.documents || [];
         const isImg = (url) => /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url) || /\/image\/upload\//.test(url);
+        const downloadUrl = (url) => url.includes('/upload/') ? url.replace('/upload/', '/upload/fl_attachment/') : url;
         const Info = ({ icon:Icon, label, value }) => (
           <div className="flex items-center gap-2 text-sm">
             <Icon size={15} className="text-slate-400 flex-shrink-0"/>
@@ -207,31 +211,42 @@ export function AdminPanel() {
                     ? <p className="text-xs text-slate-400 bg-amber-50 rounded-lg p-3">لا توجد مستندات مرفوعة لهذا الحساب.</p>
                     : <div className="grid sm:grid-cols-2 gap-2">
                         {docs.map((d,i)=>(
-                          <a key={i} href={d.url} target="_blank" rel="noreferrer"
-                            className="flex items-center gap-2 border rounded-xl p-2 hover:opacity-90 transition-opacity" style={{borderColor:'#E5E7EF'}}>
+                          <div key={i} className="flex items-center gap-2 border rounded-xl p-2" style={{borderColor:'#E5E7EF'}}>
                             {isImg(d.url)
                               ? <img src={d.url} alt={d.label||d.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0"/>
                               : <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'#EEF2FF'}}><FileText size={18} style={{color:'#4F46E5'}}/></div>}
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="text-xs font-bold text-slate-700 truncate">{d.label || `مستند ${i+1}`}</p>
-                              <p className="text-[11px] text-slate-400 truncate">{d.name || 'فتح المستند'}</p>
+                              <p className="text-[11px] text-slate-400 truncate">{d.name || ''}</p>
                             </div>
-                          </a>
+                            <div className="flex flex-col gap-1 flex-shrink-0">
+                              <a href={d.url} target="_blank" rel="noreferrer" className="text-[11px] font-bold px-2 py-0.5 rounded text-center" style={{background:'#EEF2FF',color:'#4F46E5'}}>عرض</a>
+                              <a href={downloadUrl(d.url)} download className="text-[11px] font-bold px-2 py-0.5 rounded text-center" style={{background:'#ECFDF5',color:'#059669'}}>تحميل</a>
+                            </div>
+                          </div>
                         ))}
                       </div>}
                 </div>
               </div>
 
               {u.role!=='admin' && u.role!=='owner' && (
-                <div className="flex gap-3 p-5 border-t" style={{borderColor:'#E5E7EF'}}>
-                  <button onClick={()=>{approve(u.id,true); setReviewUser(null);}}
-                    className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#059669'}}>
-                    <CheckCircle size={16}/> قبول الحساب
-                  </button>
-                  <button onClick={()=>{reject(u.id); setReviewUser(null);}}
-                    className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#DC2626'}}>
-                    <XCircle size={16}/> رفض الحساب
-                  </button>
+                <div className="border-t" style={{borderColor:'#E5E7EF'}}>
+                  <div className="px-5 pt-4">
+                    <label className="text-xs font-bold text-slate-600 mb-1.5 block">ملاحظات للعميل (تُرسل إلى بريده عند القبول/الرفض)</label>
+                    <textarea value={reviewNote} onChange={e=>setReviewNote(e.target.value)} rows={2}
+                      placeholder="مثال: يرجى تحديث السجل التجاري المرفق لأنه منتهي الصلاحية..."
+                      className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none" style={{borderColor:'#E5E7EF'}}/>
+                  </div>
+                  <div className="flex gap-3 p-5">
+                    <button onClick={()=>{approve(u.id,true,reviewNote); setReviewUser(null);}}
+                      className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#059669'}}>
+                      <CheckCircle size={16}/> قبول الحساب
+                    </button>
+                    <button onClick={()=>{reject(u.id,reviewNote); setReviewUser(null);}}
+                      className="flex-1 py-2.5 rounded-xl text-white font-bold hover:opacity-90 flex items-center justify-center gap-2" style={{background:'#DC2626'}}>
+                      <XCircle size={16}/> رفض الحساب
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

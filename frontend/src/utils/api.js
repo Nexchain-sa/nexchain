@@ -81,7 +81,7 @@ export const dashboardAPI = {
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const adminAPI = {
   users:       ()           => API.get('/admin/users'),
-  approveUser: (id, approve) => API.put(`/admin/users/${id}/approve`, { approve }),
+  approveUser: (id, approve, note) => API.put(`/admin/users/${id}/approve`, { approve, note }),
 };
 
 export const categoriesAPI = { list: () => API.get('/categories') };
