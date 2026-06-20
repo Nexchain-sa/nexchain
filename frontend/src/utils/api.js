@@ -104,6 +104,7 @@ export const mfgAPI = {
   match:       (id,data) => API.put(`/manufacturing/orders/${id}/match`, data),
   progress:    (sid,data)=> API.put(`/manufacturing/stages/${sid}/progress`, data),
   qa:          (sid,data)=> API.put(`/manufacturing/stages/${sid}/qa`, data),
+  receive:     (sid)     => API.put(`/manufacturing/stages/${sid}/receive`),
   factories:   ()        => API.get('/manufacturing/factories'),
   estimate:    (data)    => API.post('/manufacturing/estimate', data),
   suggest:     (id)      => API.get(`/manufacturing/orders/${id}/suggest`),

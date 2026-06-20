@@ -62,25 +62,26 @@ exports.suggest = async (req, res) => {
 };
 
 const STAGE_TEMPLATE = [
-  { name: 'تحضير المواد',        pct: 15 },
-  { name: 'الإنتاج',             pct: 40 },
-  { name: 'التجميع والتشطيب',    pct: 20 },
-  { name: 'التغليف',             pct: 10 },
-  { name: 'الشحن',               pct: 10 },
-  { name: 'التسليم',             pct: 5  },
+  { name: 'تحضير المواد',           pct: 15 },
+  { name: 'الإنتاج',                pct: 35 },
+  { name: 'التجميع والتشطيب',       pct: 15 },
+  { name: 'التغليف',                pct: 10 },
+  { name: 'الشحن',                  pct: 10 },
+  { name: 'التخليص الجمركي',        pct: 10 },
+  { name: 'التسليم واستلام العميل', pct: 5  },
 ];
 
 exports.createOrder = async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { product, specs, quantity, total_amount, currency, category, complexity } = req.body;
+    const { product, specs, quantity, total_amount, currency, category, complexity, factory_id } = req.body;
     const finalTotal = Number(total_amount) || estimatePrice(category, complexity, quantity).total;
     const num = genNum('MFG');
     const { rows } = await client.query(
-      `INSERT INTO manufacturing_orders(order_number,customer_id,product,specs,quantity,total_amount,currency,status,category,complexity)
-       VALUES($1,$2,$3,$4,$5,$6,$7,'pending_match',$8,$9) RETURNING *`,
-      [num, req.user.id, product, specs || null, quantity || null, finalTotal, currency || 'SAR', category || 'apparel', complexity || 'simple']
+      `INSERT INTO manufacturing_orders(order_number,customer_id,factory_id,product,specs,quantity,total_amount,currency,status,category,complexity,escrow_funded)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [num, req.user.id, factory_id || null, product, specs || null, quantity || null, finalTotal, currency || 'SAR', factory_id ? 'in_production' : 'pending_match', category || 'apparel', complexity || 'simple', finalTotal]
     );
     const order = rows[0];
     let seq = 1;
@@ -178,4 +179,27 @@ exports.listFactories = async (req, res) => {
     const { rows } = await pool.query(`SELECT id, company_name, name FROM users WHERE role='supplier' AND is_approved=true ORDER BY company_name`);
     res.json({ success: true, data: rows });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+
+exports.stageReceive = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: st } = await client.query(
+      `SELECT s.*, o.customer_id, o.total_amount FROM production_stages s JOIN manufacturing_orders o ON o.id=s.order_id WHERE s.id=$1`, [req.params.id]);
+    if (!st.length) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: 'المرحلة غير موجودة' }); }
+    const stage = st[0];
+    const isAdmin = ['admin','owner'].includes(req.user.role);
+    if (!isAdmin && stage.customer_id !== req.user.id) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: 'ليس طلبك' }); }
+    if (stage.status !== 'qa_review') { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'المرحلة غير جاهزة للاستلام' }); }
+    await client.query(`UPDATE production_stages SET status='passed', released=true, updated_at=NOW() WHERE id=$1`, [stage.id]);
+    const releaseAmt = Math.round(Number(stage.total_amount) * Number(stage.payment_pct)) / 100;
+    await client.query(`UPDATE manufacturing_orders SET released_amount=released_amount+$1 WHERE id=$2`, [releaseAmt, stage.order_id]);
+    const { rows: rem } = await client.query(`SELECT COUNT(*)::int AS n FROM production_stages WHERE order_id=$1 AND status!='passed'`, [stage.order_id]);
+    if (rem[0].n === 0) await client.query(`UPDATE manufacturing_orders SET status='completed' WHERE id=$1`, [stage.order_id]);
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'تم تأكيد الاستلام والإفراج عن الدفعة الأخيرة' });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
 };

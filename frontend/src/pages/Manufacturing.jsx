@@ -38,14 +38,14 @@ export default function Manufacturing() {
   const [stages, setStages] = useState([]);
   const [busy, setBusy] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple' });
+  const [form, setForm] = useState({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple', factory_id: '' });
   const [est, setEst] = useState(null);
   const [sugg, setSugg] = useState({});
   const [factories, setFactories] = useState([]);
   const [matchSel, setMatchSel] = useState({});
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
-  useEffect(() => { load(); if (isAdmin) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
+  useEffect(() => { load(); if (isAdmin || isBuyer) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
   useEffect(() => { if (!showCreate) return; mfgAPI.estimate({ category: form.category, complexity: form.complexity, quantity: form.quantity }).then(r => setEst(r.data.data)).catch(() => {}); }, [showCreate, form.category, form.complexity, form.quantity]);
 
   const openOrder = async (o) => {
@@ -57,7 +57,7 @@ export default function Manufacturing() {
 
   const create = async (e) => {
     e.preventDefault(); setBusy('create');
-    try { await mfgAPI.create(form); toast.success(t('تم إنشاء أمر التصنيع')); setShowCreate(false); setForm({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple' }); load(); }
+    try { await mfgAPI.create(form); toast.success(t('تم إنشاء أمر التصنيع')); setShowCreate(false); setForm({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple', factory_id: '' }); load(); }
     catch (err) { toast.error(err.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
   };
   const match = async (oid) => {
@@ -68,6 +68,7 @@ export default function Manufacturing() {
   };
   const loadSugg = async (oid) => { try { const r = await mfgAPI.suggest(oid); setSugg(x => ({ ...x, [oid]: r.data.data || [] })); } catch { toast.error(t('خطأ')); } };
   const matchTo = async (oid, fid) => { setBusy(oid); try { await mfgAPI.match(oid, { factory_id: fid }); toast.success(t('تم إسناد المصنع')); load(); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
+  const receive = async (sid, oid) => { setBusy(sid); try { const r = await mfgAPI.receive(sid); toast.success(r.data.message); reloadStages(oid); } catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); } };
   const progress = async (sid, status, oid) => { setBusy(sid); try { await mfgAPI.progress(sid, { status }); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
   const qa = async (sid, pass, oid) => { setBusy(sid); try { const r = await mfgAPI.qa(sid, { pass }); toast.success(r.data.message); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
 
@@ -90,7 +91,7 @@ export default function Manufacturing() {
           <div className="space-y-3">
             {orders.map(o => {
               const os = ORDER_STATUS[o.status] || ORDER_STATUS.pending_match;
-              const held = Number(o.total_amount) - Number(o.released_amount || 0);
+              const held = Number(o.escrow_funded || o.total_amount) - Number(o.released_amount || 0);
               return (
                 <div key={o.id} className="bg-white rounded-2xl border" style={{ borderColor: '#E5E7EF' }}>
                   <div className="p-4 flex items-center gap-3 flex-wrap cursor-pointer" onClick={() => openOrder(o)}>
@@ -104,7 +105,7 @@ export default function Manufacturing() {
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: os.bg, color: os.color }}>{t(os.label)}</span>
                     <div className="text-left">
                       <p className="text-sm font-bold" style={{ color: '#059669' }}>{t('مُفرَج')}: {fmt(o.released_amount)}</p>
-                      <p className="text-[11px] text-slate-400">{t('محتجَز')}: {fmt(held)} · {o.stage_done}/{o.stage_total}</p>
+                      <p className="text-[11px] text-slate-400">🛡️ {t('مضمون في الضمان')}: {fmt(held)} · {o.stage_done}/{o.stage_total}</p>
                     </div>
                     <ChevronDown size={16} className="text-slate-400" style={{ transform: expanded === o.id ? 'rotate(180deg)' : 'none' }} />
                   </div>
@@ -135,6 +136,7 @@ export default function Manufacturing() {
                       )}
                       {stages.map(s => {
                         const ss = STAGE_STATUS[s.status] || STAGE_STATUS.pending;
+                        const isReceipt = (s.name || '').indexOf('التسليم') !== -1;
                         return (
                           <div key={s.id} className="flex items-center gap-3 border rounded-xl p-3" style={{ borderColor: '#E5E7EF' }}>
                             <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: ss.bg, color: ss.color }}>{s.seq}</div>
@@ -145,7 +147,8 @@ export default function Manufacturing() {
                             <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: ss.bg, color: ss.color }}>{t(ss.label)}</span>
                             {isFactory && o.status === 'in_production' && s.status === 'pending' && <button onClick={() => progress(s.id, 'in_progress', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#EEF2FF', color: '#4F46E5' }}>{t('بدء')}</button>}
                             {isFactory && s.status === 'in_progress' && <button onClick={() => progress(s.id, 'qa_review', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>{t('تم الإنجاز (للفحص)')}</button>}
-                            {isAdmin && s.status === 'qa_review' && (
+                            {(isBuyer || isAdmin) && isReceipt && s.status === 'qa_review' && <button onClick={() => receive(s.id, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1" style={{ background: '#ECFDF5', color: '#059669' }}><CheckCircle size={12}/> {t('تأكيد الاستلام السليم')}</button>}
+                            {isAdmin && !isReceipt && s.status === 'qa_review' && (
                               <div className="flex gap-1">
                                 <button onClick={() => qa(s.id, true, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1" style={{ background: '#ECFDF5', color: '#059669' }}><CheckCircle size={12} /> {t('اعتماد')}</button>
                                 <button onClick={() => qa(s.id, false, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1" style={{ background: '#FEE2E2', color: '#DC2626' }}><XCircle size={12} /> {t('رفض')}</button>
@@ -180,6 +183,10 @@ export default function Manufacturing() {
               <input placeholder={t('الكمية')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
               <input type="number" placeholder={t('اتركه فارغًا لاستخدام السعر التقديري')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} />
             </div>
+            <select className={inp} style={{ borderColor: '#E5E7EF' }} value={form.factory_id} onChange={e => setForm({ ...form, factory_id: e.target.value })}>
+              <option value="">{t('اختر المصنع (اختياري — وإلا تطابقه المنصة)')}</option>
+              {factories.map(fc => <option key={fc.id} value={fc.id}>{fc.company_name || fc.name}</option>)}
+            </select>
             {est && (
               <div className="rounded-xl p-3 text-xs" style={{ background:'#EEF2FF', color:'#3730A3' }}>
                 <div className="flex items-center gap-1 font-bold mb-1"><Sparkles size={13}/> {t('السعر المعياري التقديري')}</div>

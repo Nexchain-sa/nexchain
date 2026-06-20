@@ -303,6 +303,7 @@ const autoSetup = async () => {
     // ذكاء التصنيع: أعمدة + سمات المصانع
     await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS category VARCHAR(40)`).catch(()=>{});
     await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS complexity VARCHAR(20)`).catch(()=>{});
+    await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS escrow_funded NUMERIC(15,2) DEFAULT 0`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});

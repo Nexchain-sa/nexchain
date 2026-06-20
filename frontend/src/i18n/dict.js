@@ -478,4 +478,9 @@ export const DICT = {
   'تم شراء المركز وانتقاله إلى محفظتك': 'Position purchased and moved to your portfolio',
   'تم إدراج المركز للبيع': 'Position listed for sale',
   'أدخل سعر البيع': 'Enter a sale price',
+  'التخليص الجمركي': 'Customs clearance',
+  'التسليم واستلام العميل': 'Delivery & customer receipt',
+  'مضمون في الضمان': 'Held in escrow',
+  'تأكيد الاستلام السليم': 'Confirm proper receipt',
+  'اختر المصنع (اختياري — وإلا تطابقه المنصة)': 'Choose a factory (optional — otherwise the platform matches)',
 };
