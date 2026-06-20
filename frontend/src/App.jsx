@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 
 // Pages
 import Login      from './pages/Login';
@@ -31,6 +32,7 @@ const ProtectedRoute = ({ children, roles }) => {
 
 const App = () => (
   <LanguageProvider>
+    <CurrencyProvider>
     <BrowserRouter>
     <AuthProvider>
       <Toaster position="bottom-left" toastOptions={{
@@ -60,6 +62,7 @@ const App = () => (
       </Routes>
     </AuthProvider>
     </BrowserRouter>
+    </CurrencyProvider>
   </LanguageProvider>
 );
 

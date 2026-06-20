@@ -5,6 +5,7 @@ import { CreditCard, CheckCircle, Clock, AlertTriangle, Wallet, Upload, FileText
 import { uploadToCloudinary } from '../config/cloudinary';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const STATUS = {
   due:            { label: 'مستحق',          color: '#4F46E5', bg: '#EEF2FF', icon: Clock },
@@ -19,6 +20,7 @@ const fmtDate = (d, lang='ar') => d ? new Date(d).toLocaleDateString(lang==='ar'
 export default function Installments() {
   const { user } = useAuth();
   const { t, dir, lang } = useLang();
+  const { fmt } = useCurrency();
   const isAdmin = ['admin', 'owner'].includes(user?.role);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,10 +87,10 @@ export default function Installments() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat label="إجمالي المستحق" value={money(totalDue)} suffix=" ر.س" color="#4F46E5" icon={Wallet} />
+        <Stat label="إجمالي المستحق" value={fmt(totalDue)} color="#4F46E5" icon={Wallet} />
         <Stat label="أقساط مدفوعة"  value={paidCount}        color="#059669" icon={CheckCircle} />
         <Stat label="أقساط متأخرة"  value={overdue}          color="#DC2626" icon={AlertTriangle} />
-        <Stat label="إجمالي الغرامات" value={money(lateFees)} suffix=" ر.س" color="#D97706" icon={Clock} />
+        <Stat label="إجمالي الغرامات" value={fmt(lateFees)} color="#D97706" icon={Clock} />
       </div>
 
       <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#E5E7EF' }}>
@@ -122,7 +124,7 @@ export default function Installments() {
                     <td className="px-4 py-3 font-bold text-slate-700">{t('قسط')} #{r.seq}</td>
                     {isAdmin && <td className="px-4 py-3 text-slate-600">{r.company_name || r.payer_name || '-'}</td>}
                     <td className="px-4 py-3 text-slate-600">{fmtDate(r.due_date, lang)}</td>
-                    <td className="px-4 py-3 font-bold text-slate-800">{money(total)} <span className="text-xs text-slate-400">{t('ر.س')}</span></td>
+                    <td className="px-4 py-3 font-bold text-slate-800">{fmt(total)}</td>
                     <td className="px-4 py-3">{Number(r.late_fee) > 0 ? <span className="text-red-600 font-bold">{money(r.late_fee)}</span> : <span className="text-slate-300">—</span>}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: st.bg, color: st.color }}>

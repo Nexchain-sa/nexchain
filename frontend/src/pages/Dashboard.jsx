@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { dashboardAPI, rfqAPI, competitionAPI } from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { FileText, Trophy, Banknote, TrendingUp, Package, Users, Plus, ArrowLeft } from 'lucide-react';
@@ -59,6 +60,7 @@ const CustomTooltip = ({active,payload,label}) => {
 export default function Dashboard() {
   const { user } = useAuth();
   const { t, dir, lang } = useLang();
+  const { fmt } = useCurrency();
   const [stats, setStats] = useState(null);
   const [rfqs,  setRfqs]  = useState([]);
   const [comps, setComps] = useState([]);
@@ -99,7 +101,7 @@ export default function Dashboard() {
       {user?.role === 'buyer' && stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card label="إجمالي الطلبات"  value={stats.rfqs||0}        icon={FileText}   color="sky"    sub="طلب شراء"/>
-          <Card label="قيمة المشتريات"  value={`SAR ${Number(stats.orders_value||0).toLocaleString()}`} icon={Package} color="green"/>
+          <Card label="قيمة المشتريات"  value={fmt(stats.orders_value||0)} icon={Package} color="green"/>
           <Card label="الفواتير"         value={stats.invoices||0}    icon={Banknote}   color="blue"  sub="فاتورة"/>
           <Card label="طلبات التمويل"    value={stats.financing||0}   icon={TrendingUp} color="amber"/>
         </div>
@@ -109,7 +111,7 @@ export default function Dashboard() {
           <Card label="عروض مقدّمة"     value={stats.quotes||0}      icon={FileText}   color="sky"/>
           <Card label="عروض فائزة"      value={stats.won||0}          icon={Trophy}     color="green"/>
           <Card label="معدل الفوز"       value={`${stats.win_rate||0}%`} icon={TrendingUp} color="blue"/>
-          <Card label="إجمالي المبيعات" value={`SAR ${Number(stats.total_sales||0).toLocaleString()}`} icon={Package} color="amber"/>
+          <Card label="إجمالي المبيعات" value={fmt(stats.total_sales||0)} icon={Package} color="amber"/>
         </div>
       )}
       {(user?.role === 'admin' || user?.role === 'owner') && stats && (

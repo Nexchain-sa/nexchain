@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
@@ -80,6 +81,7 @@ export default function Layout() {
   const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
   const { t, dir, lang, toggle } = useLang();
+  const { currency, setCurrency, currencies } = useCurrency();
   const [open, setOpen] = useState(true);
   const [switchOpen, setSwitchOpen] = useState(false);
   const [pwTarget, setPwTarget] = useState(null);
@@ -220,6 +222,10 @@ export default function Layout() {
             )}
           </div>
 
+          <select value={currency} onChange={e=>setCurrency(e.target.value)} title="Currency"
+            className="px-2 py-1.5 rounded-lg text-sm font-bold border bg-white cursor-pointer" style={{ borderColor:'#E5E7EF', color:'#475569' }}>
+            {currencies.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
           <button onClick={toggle} title="Language"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold border transition-all hover:bg-slate-50"
             style={{ borderColor:'#E5E7EF', color:'#475569' }}>

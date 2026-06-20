@@ -375,4 +375,8 @@ export const DICT = {
   'تأكيد التوقيع وإرفاق للممول': 'Confirm signature & send to financier',
   'يجب رفع العقد والسند موقّعين': 'You must upload both signed documents',
   'تم توقيع المستندات وإرفاقها للممول': 'Documents signed and sent to the financier',
+  'العملة': 'Currency',
+  'متوافق مع الشريعة (مرابحة)': 'Shariah-compliant (Murabaha)',
+  'هامش المرابحة %': 'Murabaha margin %',
+  '🌙 متوافق مع الشريعة': '🌙 Shariah-compliant',
 };

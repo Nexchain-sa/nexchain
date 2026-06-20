@@ -78,6 +78,7 @@ export default function Agreements() {
                     <span className="text-xs text-slate-400 mr-2">{a.buyer_name}</span>
                   </div>
                   <span className="text-sm font-bold" style={{ color: '#4F46E5' }}>{Number(a.requested_amount || 0).toLocaleString()} {t('ر.س')}</span>
+                  {a.financing_mode==='shariah' && <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background:'#ECFDF5', color:'#0F766E' }}>{t('🌙 متوافق مع الشريعة')}</span>}
                   {signed
                     ? <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#ECFDF5', color: '#059669' }}>{t('موقّع')}</span>
                     : <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>{t('بانتظار توقيع المشتري')}</span>}

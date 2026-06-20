@@ -6,10 +6,12 @@ import { Banknote, TrendingUp, Shield, Clock, Landmark, Upload, FileText, X } fr
 import { uploadToCloudinary } from '../config/cloudinary';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function Financing() {
   const { user } = useAuth();
   const { t, dir, lang } = useLang();
+  const { fmt } = useCurrency();
   const [requests, setRequests] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [tab, setTab] = useState('browse');
@@ -17,7 +19,7 @@ export default function Financing() {
   const [bidForm, setBidForm] = useState({ offered_amount:'', monthly_rate:'', duration_days:'30', financier_type:'individual' });
   const [submitting, setSub] = useState(false);
   const [fundModal, setFundModal] = useState(null);
-  const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90', earnest_amount:'' });
+  const [fundForm, setFundForm] = useState({ monthly_rate:'2', duration_days:'90', earnest_amount:'', financing_mode:'conventional' });
   const [funding, setFunding] = useState(false);
   const [contract, setContract] = useState(null);
   const [promissory, setPromissory] = useState(null);
@@ -104,7 +106,7 @@ export default function Financing() {
                   </div>
                   <p className="font-bold text-slate-800">{r.requester_name}</p>
                   <div className="flex items-center gap-4 mt-2 flex-wrap">
-                    <span className="text-[#059669] font-bold text-lg">SAR {Number(r.invoice_amount||0).toLocaleString()}</span>
+                    <span className="text-[#059669] font-bold text-lg">{fmt(r.invoice_amount)}</span>
                     <span className="text-xs text-slate-500">{t('يستحق:')} {new Date(r.due_date).toLocaleDateString(lang==='ar'?'ar-SA':'en-US')}</span>
                     {r.best_rate && <span className="text-xs text-[#4F46E5]">{t('أفضل سعر:')} {r.best_rate}% {t('شهرياً')}</span>}
                     <span className="text-xs text-slate-500">{r.bid_count||0} {t('عرض تمويل')}</span>
@@ -200,8 +202,12 @@ export default function Financing() {
             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Landmark size={20} style={{color:'#0D9488'}}/> {t('تمويل من صندوق المنصة')}</h3>
             <p className="text-slate-500 text-sm">{t('الفاتورة:')} {fundModal.invoice_number} — SAR {Number(fundModal.invoice_amount||0).toLocaleString()}</p>
             <p className="text-xs text-slate-500 bg-[#F0FDFA] rounded-lg p-3">{t('ستموّل المنصة هذه الصفقة مباشرة من صندوقها، ويعود الربح بالكامل للمنصة، ويُنشأ جدول الأقساط تلقائياً للمشتري.')}</p>
+            <label className="flex items-center gap-2 text-sm font-bold cursor-pointer rounded-xl p-2.5" style={{background:'#F0FDFA', color:'#0F766E'}}>
+              <input type="checkbox" checked={fundForm.financing_mode==='shariah'} onChange={e=>setFundForm({...fundForm,financing_mode:e.target.checked?'shariah':'conventional'})}/>
+              🌙 {t('متوافق مع الشريعة (مرابحة)')}
+            </label>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-slate-500 mb-1.5 block">{t('الربح الشهري % *')}</label>
+              <div><label className="text-xs text-slate-500 mb-1.5 block">{fundForm.financing_mode==='shariah' ? t('هامش المرابحة %')+' *' : t('الربح الشهري % *')}</label>
                 <input required type="number" step="0.1" className={inp} value={fundForm.monthly_rate} onChange={e=>setFundForm({...fundForm,monthly_rate:e.target.value})}/></div>
               <div><label className="text-xs text-slate-500 mb-1.5 block">{t('مدة التقسيط *')}</label>
                 <select className={inp} value={fundForm.duration_days} onChange={e=>setFundForm({...fundForm,duration_days:e.target.value})}>

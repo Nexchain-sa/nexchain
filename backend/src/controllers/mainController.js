@@ -387,7 +387,7 @@ exports.fundByPlatform = async (req, res) => {
   try {
     await client.query('BEGIN');
     const { financing_request_id } = req.params;
-    const { monthly_rate, duration_days, earnest_amount, contract, promissory } = req.body;
+    const { monthly_rate, duration_days, earnest_amount, contract, promissory, financing_mode } = req.body;
     const { rows: fr } = await client.query(`SELECT * FROM financing_requests WHERE id=$1 AND status='open'`, [financing_request_id]);
     if (!fr.length) { await client.query('ROLLBACK'); return res.status(404).json({ success:false, message:'طلب التمويل غير متاح أو مُموّل مسبقاً' }); }
     const request = fr[0];
@@ -404,6 +404,7 @@ exports.fundByPlatform = async (req, res) => {
     await client.query(`UPDATE financing_requests SET status='funded',selected_bid_id=$1,financing_type='fund' WHERE id=$2`, [bid.id, financing_request_id]);
     await client.query(`UPDATE invoices SET status='financed' WHERE id=$1`, [request.invoice_id]);
     await client.query(`UPDATE financing_requests SET earnest_amount=$1 WHERE id=$2`, [Number(earnest_amount) || 0, financing_request_id]);
+    await client.query(`UPDATE financing_requests SET financing_mode=$1 WHERE id=$2`, [financing_mode==='shariah'?'shariah':'conventional', financing_request_id]);
     await client.query(`UPDATE financing_requests SET contract_url=$1,contract_name=$2,promissory_url=$3,promissory_name=$4 WHERE id=$5`,
       [contract && contract.url || null, contract && contract.name || null, promissory && promissory.url || null, promissory && promissory.name || null, financing_request_id]);
     if (request.requester_id) {
@@ -436,6 +437,7 @@ exports.listDeals = async (req, res) => {
              (SELECT fr.status FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS financing_status,
              (SELECT fr.financing_type FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS financing_type,
              (SELECT fr.earnest_amount FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS earnest_amount,
+             (SELECT fr.financing_mode FROM financing_requests fr WHERE fr.invoice_id=i.id ORDER BY fr.created_at DESC LIMIT 1) AS financing_mode,
              (SELECT COUNT(*)::int FROM installments inst WHERE inst.invoice_id=i.id) AS inst_total,
              (SELECT COUNT(*)::int FROM installments inst WHERE inst.invoice_id=i.id AND inst.status='paid') AS inst_paid
       FROM invoices i
@@ -468,7 +470,7 @@ exports.listAgreements = async (req, res) => {
     const params = isFin ? [] : [req.user.id];
     const { rows } = await pool.query(`
       SELECT fr.id, fr.requested_amount, fr.contract_url, fr.contract_name, fr.promissory_url, fr.promissory_name,
-             fr.signed_contract_url, fr.signed_contract_name, fr.signed_promissory_url, fr.signed_promissory_name, fr.signed_at,
+             fr.signed_contract_url, fr.signed_contract_name, fr.signed_promissory_url, fr.signed_promissory_name, fr.signed_at, fr.financing_mode,
              i.invoice_number, u.company_name AS buyer_name
       FROM financing_requests fr
       JOIN invoices i ON i.id=fr.invoice_id

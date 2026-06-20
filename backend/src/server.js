@@ -238,7 +238,7 @@ const autoSetup = async () => {
     await client.query(`ALTER TABLE installments ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(500)`).catch(()=>{});
     await client.query(`ALTER TABLE installments ADD COLUMN IF NOT EXISTS receipt_name VARCHAR(255)`).catch(()=>{});
     await client.query(`ALTER TABLE financing_requests ADD COLUMN IF NOT EXISTS earnest_amount NUMERIC(15,2) DEFAULT 0`).catch(()=>{});
-    for (const col of ['contract_url VARCHAR(500)','contract_name VARCHAR(255)','promissory_url VARCHAR(500)','promissory_name VARCHAR(255)','signed_contract_url VARCHAR(500)','signed_contract_name VARCHAR(255)','signed_promissory_url VARCHAR(500)','signed_promissory_name VARCHAR(255)','signed_at TIMESTAMP']) {
+    for (const col of ['contract_url VARCHAR(500)','contract_name VARCHAR(255)','promissory_url VARCHAR(500)','promissory_name VARCHAR(255)','signed_contract_url VARCHAR(500)','signed_contract_name VARCHAR(255)','signed_promissory_url VARCHAR(500)','signed_promissory_name VARCHAR(255)','signed_at TIMESTAMP','financing_mode VARCHAR(20)']) {
       await client.query(`ALTER TABLE financing_requests ADD COLUMN IF NOT EXISTS ${col}`).catch(()=>{});
     }
     // installments table

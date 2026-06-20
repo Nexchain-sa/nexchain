@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { dealAPI } from '../utils/api';
 import { Workflow, Check, FileText, Banknote, Landmark, CreditCard, CheckCircle2 } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const STAGES = [
   { key: 'created',   label: 'إنشاء الصفقة', icon: FileText },
@@ -25,6 +26,7 @@ const money = (v) => Number(v || 0).toLocaleString('en-US', { maximumFractionDig
 
 export default function Deals() {
   const { t, dir } = useLang();
+  const { fmt } = useCurrency();
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,13 +62,16 @@ export default function Deals() {
                       <span className="font-bold text-slate-800">{d.invoice_number}</span>
                       <span className="text-xs text-slate-400">{d.buyer_name || '-'} ← {d.supplier_name || '-'}</span>
                     </div>
-                    <p className="text-lg font-bold mt-0.5" style={{ color: '#4F46E5' }}>{money(d.amount)} <span className="text-xs text-slate-400">{t('ر.س')}</span></p>
+                    <p className="text-lg font-bold mt-0.5" style={{ color: '#4F46E5' }}>{fmt(d.amount)}</p>
                   </div>
                   {cancelled
                     ? <span className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEE2E2', color: '#DC2626' }}>{t('ملغاة')}</span>
                     : <span className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#EEF2FF', color: '#4F46E5' }}>{t(STAGES[active].label)}</span>}
                   {d.inst_total > 0 && (
                     <span className="text-xs text-slate-500">{t('الأقساط:')} {d.inst_paid}/{d.inst_total} {t('مدفوعة')}</span>
+                  )}
+                  {d.financing_mode==='shariah' && (
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background:'#ECFDF5', color:'#0F766E' }}>{t('🌙 متوافق مع الشريعة')}</span>
                   )}
                   {Number(d.earnest_amount) > 0 && (
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background:'#FEF3C7', color:'#92400E' }}>{t('مبلغ جدية:')} {money(d.earnest_amount)} {t('ر.س')}</span>
