@@ -307,6 +307,19 @@ const autoSetup = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});
     await client.query(`UPDATE users SET mfg_specialties='["apparel","textile"]'::jsonb, mfg_capacity=5000, mfg_lead_days=9, rating=4.6 WHERE email='supplier@demo.com'`).catch(()=>{});
+    // السوق الثانوي — جدول الإدراجات
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS secondary_listings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        bid_id UUID NOT NULL REFERENCES financing_bids(id) ON DELETE CASCADE,
+        seller_id UUID NOT NULL REFERENCES users(id),
+        ask_price NUMERIC(15,2) NOT NULL DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','sold','cancelled')),
+        buyer_id UUID REFERENCES users(id),
+        sold_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {

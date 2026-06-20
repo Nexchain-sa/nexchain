@@ -111,4 +111,11 @@ export const mfgAPI = {
 
 export const analyticsAPI = { impact: () => API.get('/impact') };
 
+export const secondaryAPI = {
+  list:        ()        => API.get('/secondary/listings'),
+  create:      (data)    => API.post('/secondary/listings', data),
+  buy:         (id)      => API.post(`/secondary/listings/${id}/buy`),
+  myPositions: ()        => API.get('/secondary/my-positions'),
+};
+
 export default API;

@@ -21,6 +21,7 @@ import Agreements  from './pages/Agreements';
 import Manufacturing from './pages/Manufacturing';
 import Impact      from './pages/Impact';
 import Portfolio   from './pages/Portfolio';
+import Secondary   from './pages/Secondary';
 import AdminPanel from './pages/AdminPanel';
 import Profile    from './pages/Profile';
 import Layout     from './components/Layout';
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="manufacturing" element={<Manufacturing />} />
           <Route path="impact"       element={<Impact />} />
           <Route path="portfolio"    element={<Portfolio />} />
+          <Route path="secondary"    element={<Secondary />} />
           <Route path="profile"      element={<Profile />} />
           <Route path="admin"        element={<ProtectedRoute roles={['admin','owner']}><AdminPanel /></ProtectedRoute>} />
         </Route>

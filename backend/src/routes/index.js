@@ -3,6 +3,7 @@ const router  = express.Router();
 const { auth, requireRole } = require('../middleware/auth');
 const mfgC = require('../controllers/manufacturingController');
 const anC = require('../controllers/analyticsController');
+const secC = require('../controllers/secondaryController');
 const authC = require('../controllers/authController');
 const rfqC  = require('../controllers/rfqController');
 const mainC = require('../controllers/mainController');
@@ -61,6 +62,12 @@ router.post('/manufacturing/estimate',               auth, mfgC.estimate);
 router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
 router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
 router.get ('/financing/portfolio', auth, requireRole('investor','admin','owner'), anC.portfolio);
+
+// Secondary market
+router.get ('/secondary/listings',        auth, secC.listListings);
+router.post('/secondary/listings',        auth, requireRole('investor','admin','owner'), secC.createListing);
+router.post('/secondary/listings/:id/buy',auth, requireRole('investor','admin','owner'), secC.buyListing);
+router.get ('/secondary/my-positions',    auth, requireRole('investor','admin','owner'), secC.myPositions);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
