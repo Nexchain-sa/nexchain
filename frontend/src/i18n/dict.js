@@ -441,4 +441,9 @@ export const DICT = {
   'موردون معتمدون': 'Verified suppliers',
   'الأثر': 'Impact',
   'كل المؤشرات محسوبة آنيًا من بيانات المنصة الفعلية — جاهزة لعروض المستثمرين.': 'All metrics are computed live from real platform data — ready for investor decks.',
+  'تقييم المخاطر': 'Risk rating',
+  'منخفض المخاطر': 'Low risk',
+  'جيد': 'Good',
+  'مخاطر متوسطة': 'Medium risk',
+  'مرتفع المخاطر': 'High risk',
 };

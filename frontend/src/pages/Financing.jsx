@@ -8,6 +8,14 @@ import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 
+const RISK = {
+  A: { color:'#059669', bg:'#ECFDF5', label:'منخفض المخاطر' },
+  B: { color:'#0D9488', bg:'#F0FDFA', label:'جيد' },
+  C: { color:'#D97706', bg:'#FEF3C7', label:'مخاطر متوسطة' },
+  D: { color:'#DC2626', bg:'#FEE2E2', label:'مرتفع المخاطر' },
+};
+const riskOf = (g) => RISK[g] || RISK.C;
+
 export default function Financing() {
   const { user } = useAuth();
   const { t, dir, lang } = useLang();
@@ -110,6 +118,7 @@ export default function Financing() {
                     <span className="text-xs text-slate-500">{t('يستحق:')} {new Date(r.due_date).toLocaleDateString(lang==='ar'?'ar-SA':'en-US')}</span>
                     {r.best_rate && <span className="text-xs text-[#4F46E5]">{t('أفضل سعر:')} {r.best_rate}% {t('شهرياً')}</span>}
                     <span className="text-xs text-slate-500">{r.bid_count||0} {t('عرض تمويل')}</span>
+                    {r.risk_grade && <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{background:riskOf(r.risk_grade).bg, color:riskOf(r.risk_grade).color}}>{t('تقييم المخاطر')}: {r.risk_grade} · {r.risk_score}</span>}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 flex-shrink-0">
@@ -173,6 +182,7 @@ export default function Financing() {
             className="bg-white border border-[#ECFDF5] rounded-2xl p-6 w-full max-w-md space-y-4">
             <h3 className="font-bold text-slate-800 text-lg">{t('تقديم عرض تمويل')}</h3>
             <p className="text-slate-500 text-sm">{t('الفاتورة:')} {bidModal.invoice_number} — SAR {Number(bidModal.invoice_amount||0).toLocaleString()}</p>
+            {bidModal.risk_grade && <p><span className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:riskOf(bidModal.risk_grade).bg,color:riskOf(bidModal.risk_grade).color}}>{t('تقييم المخاطر')}: {bidModal.risk_grade} ({bidModal.risk_score}) — {t(riskOf(bidModal.risk_grade).label)}</span></p>}
             <div><label className="text-xs text-slate-500 mb-1.5 block">{t('المبلغ المعروض (SAR) *')}</label>
               <input required type="number" className={inp} value={bidForm.offered_amount} onChange={e=>setBidForm({...bidForm,offered_amount:e.target.value})}/></div>
             <div className="grid grid-cols-2 gap-3">
@@ -201,6 +211,7 @@ export default function Financing() {
             className="bg-white border border-[#E5E7EF] rounded-2xl p-6 w-full max-w-md space-y-4">
             <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Landmark size={20} style={{color:'#0D9488'}}/> {t('تمويل من صندوق المنصة')}</h3>
             <p className="text-slate-500 text-sm">{t('الفاتورة:')} {fundModal.invoice_number} — SAR {Number(fundModal.invoice_amount||0).toLocaleString()}</p>
+            {fundModal.risk_grade && <p><span className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:riskOf(fundModal.risk_grade).bg,color:riskOf(fundModal.risk_grade).color}}>{t('تقييم المخاطر')}: {fundModal.risk_grade} ({fundModal.risk_score}) — {t(riskOf(fundModal.risk_grade).label)}</span></p>}
             <p className="text-xs text-slate-500 bg-[#F0FDFA] rounded-lg p-3">{t('ستموّل المنصة هذه الصفقة مباشرة من صندوقها، ويعود الربح بالكامل للمنصة، ويُنشأ جدول الأقساط تلقائياً للمشتري.')}</p>
             <label className="flex items-center gap-2 text-sm font-bold cursor-pointer rounded-xl p-2.5" style={{background:'#F0FDFA', color:'#0F766E'}}>
               <input type="checkbox" checked={fundForm.financing_mode==='shariah'} onChange={e=>setFundForm({...fundForm,financing_mode:e.target.checked?'shariah':'conventional'})}/>

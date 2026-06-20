@@ -86,20 +86,36 @@ exports.requestFinancing = async (req, res) => {
   }
 };
 
+// محرّك تقييم المخاطر الائتماني (قائم على القواعد)
+function riskOf(r) {
+  const it = Number(r.buyer_inst_total) || 0, ip = Number(r.buyer_inst_paid) || 0, io = Number(r.buyer_inst_overdue) || 0;
+  let s = 50;
+  s += r.is_approved ? 15 : -10;
+  if (it > 0) { s += Math.round(30 * ip / it); s -= Math.round(25 * io / it); } else { s += 5; }
+  s += Math.min(Number(r.total_orders) || 0, 10);
+  s += Math.round((Number(r.requester_rating) || 0) / 5 * 10);
+  s = Math.max(0, Math.min(100, s));
+  const grade = s >= 80 ? 'A' : s >= 60 ? 'B' : s >= 40 ? 'C' : 'D';
+  return { risk_score: s, risk_grade: grade };
+}
+
 exports.listFinancingRequests = async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT fr.*, i.invoice_number, i.amount as invoice_amount, i.due_date,
-             u.company_name as requester_name,
+             u.company_name as requester_name, u.is_approved, u.total_orders, COALESCE(u.rating,0) AS requester_rating,
              (SELECT COUNT(*) FROM financing_bids fb WHERE fb.financing_request_id=fr.id) as bid_count,
-             (SELECT MIN(fb.monthly_rate) FROM financing_bids fb WHERE fb.financing_request_id=fr.id) as best_rate
+             (SELECT MIN(fb.monthly_rate) FROM financing_bids fb WHERE fb.financing_request_id=fr.id) as best_rate,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id) AS buyer_inst_total,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id AND inst.status='paid') AS buyer_inst_paid,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id AND inst.status='overdue') AS buyer_inst_overdue
       FROM financing_requests fr
       JOIN invoices i ON fr.invoice_id=i.id
       JOIN users u ON fr.requester_id=u.id
       WHERE fr.status='open'
       ORDER BY fr.created_at DESC
     `);
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: rows.map(r => ({ ...r, ...riskOf(r) })) });
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
