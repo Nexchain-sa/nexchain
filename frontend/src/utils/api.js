@@ -64,6 +64,7 @@ export const financingAPI = {
   fundByPlatform: (reqId, data) => API.post(`/financing/requests/${reqId}/fund-by-platform`, data),
   agreements: () => API.get('/financing/agreements'),
   signAgreement: (id, data) => API.put(`/financing/requests/${id}/sign`, data),
+  portfolio: () => API.get('/financing/portfolio'),
 };
 
 // ── Competitions ──────────────────────────────────────────────────────────────

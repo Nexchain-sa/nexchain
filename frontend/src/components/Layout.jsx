@@ -8,7 +8,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity, Briefcase
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -37,6 +37,7 @@ const navItems = {
   investor: [
     { to:'/dashboard',  icon:LayoutDashboard, label:'لوحة التحكم' },
     { to:'/financing',  icon:Banknote,        label:'فرص التمويل' },
+    { to:'/portfolio',  icon:Briefcase,       label:'محفظتي' },
     { to:'/agreements', icon:FileSignature,   label:'العقود' },
     { to:'/impact',     icon:Activity,        label:'الأثر' },
   ],
@@ -50,6 +51,7 @@ const navItems = {
     { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
+    { to:'/portfolio',    icon:Briefcase,        label:'محفظتي' },
     { to:'/impact',       icon:Activity,         label:'الأثر' },
     { to:'/admin',        icon:Users,            label:'إدارة المستخدمين' },
   ],
@@ -63,6 +65,7 @@ const navItems = {
     { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
+    { to:'/portfolio',    icon:Briefcase,        label:'محفظتي' },
     { to:'/impact',       icon:Activity,         label:'الأثر' },
     { to:'/admin',        icon:ShieldCheck,      label:'إدارة المنصة' },
   ],

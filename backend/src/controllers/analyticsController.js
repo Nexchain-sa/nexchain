@@ -33,3 +33,43 @@ exports.impact = async (req, res) => {
     }});
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
+
+
+exports.portfolio = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT fb.id, fb.offered_amount, fb.monthly_rate, fb.duration_days, fb.financier_type,
+             fr.id AS request_id, fr.status AS req_status, fr.financing_mode,
+             i.invoice_number, u.company_name AS buyer_name,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.financing_request_id=fr.id) AS inst_total,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.financing_request_id=fr.id AND inst.status='paid') AS inst_paid,
+             (SELECT COALESCE(SUM(amount),0)::float FROM installments inst WHERE inst.financing_request_id=fr.id) AS inst_amount_total,
+             (SELECT COALESCE(SUM(amount),0)::float FROM installments inst WHERE inst.financing_request_id=fr.id AND inst.status='paid') AS inst_amount_paid
+      FROM financing_bids fb
+      JOIN financing_requests fr ON fr.id=fb.financing_request_id
+      JOIN invoices i ON i.id=fr.invoice_id
+      JOIN users u ON u.id=fr.requester_id
+      WHERE fb.financier_id=$1 AND fb.status='accepted'
+      ORDER BY fb.submitted_at DESC
+    `, [req.user.id]);
+    const positions = rows.map(p => {
+      const invested = Number(p.offered_amount) || 0;
+      const rate = Number(p.monthly_rate) || 0;
+      const months = Math.max(1, Math.round((Number(p.duration_days) || 90) / 30));
+      const expected_profit = Math.round(invested * (rate / 100) * months);
+      const expected_return = invested + expected_profit;
+      const realized = Number(p.inst_amount_paid) || 0;
+      const outstanding = Math.max(0, (Number(p.inst_amount_total) || expected_return) - realized);
+      return { ...p, invested, rate, months, expected_profit, expected_return, realized, outstanding };
+    });
+    const sum = (k) => positions.reduce((a, p) => a + (p[k] || 0), 0);
+    const invested = sum('invested'), expected_profit = sum('expected_profit'), realized = sum('realized'), outstanding = sum('outstanding');
+    const wMonths = invested ? positions.reduce((a, p) => a + p.invested * p.months, 0) / invested : 1;
+    const period_yield = invested ? expected_profit / invested * 100 : 0;
+    const annual_yield = wMonths ? Math.round(period_yield * 12 / wMonths * 10) / 10 : 0;
+    res.json({ success: true, data: {
+      positions,
+      summary: { invested, expected_profit, expected_return: invested + expected_profit, realized, outstanding, annual_yield, active: positions.length },
+    }});
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};

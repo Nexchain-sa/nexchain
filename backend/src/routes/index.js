@@ -60,6 +60,7 @@ router.get ('/manufacturing/factories',              auth, requireRole('admin','
 router.post('/manufacturing/estimate',               auth, mfgC.estimate);
 router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
 router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
+router.get ('/financing/portfolio', auth, requireRole('investor','admin','owner'), anC.portfolio);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
