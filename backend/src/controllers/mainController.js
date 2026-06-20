@@ -84,7 +84,7 @@ exports.requestFinancing = async (req, res) => {
     const { rows: fresh } = await pool.query(`SELECT * FROM financing_requests WHERE id=$1`, [rows[0].id]);
     res.status(201).json({ success: true, data: fresh[0], message: 'تم تقديم طلب التمويل' });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'خطأ في الخادم', _diag: String(err && err.message) });
+    res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
 };
 
