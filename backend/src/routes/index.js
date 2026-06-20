@@ -63,6 +63,8 @@ router.post('/manufacturing/estimate',               auth, mfgC.estimate);
 router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
 router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
 router.get ('/financing/portfolio', auth, requireRole('investor','admin','owner'), anC.portfolio);
+router.get ('/financing/auto-invest', auth, requireRole('investor','admin','owner'), mainC.getAutoInvest);
+router.put ('/financing/auto-invest', auth, requireRole('investor','admin','owner'), mainC.setAutoInvest);
 
 // Secondary market
 router.get ('/secondary/listings',        auth, secC.listListings);

@@ -65,6 +65,8 @@ export const financingAPI = {
   agreements: () => API.get('/financing/agreements'),
   signAgreement: (id, data) => API.put(`/financing/requests/${id}/sign`, data),
   portfolio: () => API.get('/financing/portfolio'),
+  getAutoInvest: () => API.get('/financing/auto-invest'),
+  setAutoInvest: (data) => API.put('/financing/auto-invest', data),
 };
 
 // ── Competitions ──────────────────────────────────────────────────────────────

@@ -321,6 +321,20 @@ const autoSetup = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    // الاستثمار التلقائي — قواعد الممولين
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS auto_invest_rules (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        financier_id UUID UNIQUE NOT NULL REFERENCES users(id),
+        enabled BOOLEAN DEFAULT FALSE,
+        max_grade VARCHAR(2) DEFAULT 'B',
+        amount_per_deal NUMERIC(15,2) DEFAULT 0,
+        min_monthly_rate NUMERIC(5,2) DEFAULT 2,
+        max_total NUMERIC(15,2) DEFAULT 0,
+        deployed NUMERIC(15,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {

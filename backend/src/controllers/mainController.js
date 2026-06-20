@@ -80,7 +80,9 @@ exports.requestFinancing = async (req, res) => {
       VALUES($1,$2,$3,$4,$5) RETURNING *
     `, [invoice_id, req.user.id, requested_amount, financing_type, competition_end]);
     await pool.query(`UPDATE invoices SET status='financing_requested' WHERE id=$1`, [invoice_id]);
-    res.status(201).json({ success: true, data: rows[0], message: 'تم تقديم طلب التمويل' });
+    await tryAutoInvest(rows[0]);
+    const { rows: fresh } = await pool.query(`SELECT * FROM financing_requests WHERE id=$1`, [rows[0].id]);
+    res.status(201).json({ success: true, data: fresh[0], message: 'تم تقديم طلب التمويل' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطأ في الخادم' });
   }
@@ -495,5 +497,74 @@ exports.listAgreements = async (req, res) => {
       ORDER BY fr.created_at DESC
     `, params);
     res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+
+// ════════════════
+// AUTO-INVEST (الاستثمار التلقائي)
+// ════════════════
+async function tryAutoInvest(request) {
+  try {
+    const buyerId = request.requester_id;
+    const amount = Number(request.requested_amount) || 0;
+    const { rows: us } = await pool.query(`
+      SELECT u.is_approved, u.total_orders, COALESCE(u.rating,0) AS requester_rating,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id) AS buyer_inst_total,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id AND inst.status='paid') AS buyer_inst_paid,
+             (SELECT COUNT(*)::int FROM installments inst WHERE inst.payer_id=u.id AND inst.status='overdue') AS buyer_inst_overdue
+      FROM users u WHERE u.id=$1`, [buyerId]);
+    if (!us.length) return;
+    const { risk_grade } = riskOf(us[0]);
+    const rank = { A: 1, B: 2, C: 3, D: 4 };
+    const { rows: rules } = await pool.query(`SELECT * FROM auto_invest_rules WHERE enabled=true ORDER BY created_at ASC`);
+    for (const rule of rules) {
+      if (rule.financier_id === buyerId) continue;
+      if (rank[risk_grade] > rank[rule.max_grade || 'B']) continue;
+      if (amount > Number(rule.amount_per_deal)) continue;
+      if (Number(rule.deployed) + amount > Number(rule.max_total)) continue;
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        const rate = Number(rule.min_monthly_rate) || 2;
+        const { rows: bidRows } = await client.query(
+          `INSERT INTO financing_bids(financing_request_id,financier_id,financier_type,offered_amount,monthly_rate,duration_days,terms,status)
+           VALUES($1,$2,'individual',$3,$4,90,'استثمار تلقائي','accepted') RETURNING *`,
+          [request.id, rule.financier_id, amount, rate]);
+        const bid = bidRows[0];
+        await client.query(`UPDATE financing_requests SET status='funded',selected_bid_id=$1 WHERE id=$2`, [bid.id, request.id]);
+        await client.query(`UPDATE invoices SET status='financed' WHERE id=$1`, [request.invoice_id]);
+        const months = 3;
+        const perInst = Math.round((amount * (1 + (rate / 100) * months) / months) * 100) / 100;
+        for (let i = 1; i <= months; i++) {
+          await client.query(`INSERT INTO installments(financing_request_id,invoice_id,payer_id,seq,amount,due_date,status) VALUES($1,$2,$3,$4,$5, CURRENT_DATE + ($6 || ' month')::interval,'due')`,
+            [request.id, request.invoice_id, buyerId, i, perInst, String(i)]);
+        }
+        await client.query(`UPDATE auto_invest_rules SET deployed=deployed+$1 WHERE id=$2`, [amount, rule.id]);
+        await client.query('COMMIT');
+      } catch (e) { await client.query('ROLLBACK'); }
+      finally { client.release(); }
+      return;
+    }
+  } catch (e) { /* best-effort */ }
+}
+
+exports.getAutoInvest = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`SELECT * FROM auto_invest_rules WHERE financier_id=$1`, [req.user.id]);
+    res.json({ success: true, data: rows[0] || { enabled: false, max_grade: 'B', amount_per_deal: 0, min_monthly_rate: 2, max_total: 0, deployed: 0 } });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.setAutoInvest = async (req, res) => {
+  try {
+    const { enabled, max_grade, amount_per_deal, min_monthly_rate, max_total } = req.body;
+    const { rows } = await pool.query(`
+      INSERT INTO auto_invest_rules(financier_id,enabled,max_grade,amount_per_deal,min_monthly_rate,max_total)
+      VALUES($1,$2,$3,$4,$5,$6)
+      ON CONFLICT(financier_id) DO UPDATE SET enabled=$2,max_grade=$3,amount_per_deal=$4,min_monthly_rate=$5,max_total=$6
+      RETURNING *`,
+      [req.user.id, !!enabled, max_grade || 'B', Number(amount_per_deal) || 0, Number(min_monthly_rate) || 2, Number(max_total) || 0]);
+    res.json({ success: true, data: rows[0], message: 'تم حفظ إعدادات الاستثمار التلقائي' });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
