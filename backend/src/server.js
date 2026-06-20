@@ -272,6 +272,34 @@ const autoSetup = async () => {
         console.log('Demo installments seeded');
       }
     }
+    // ── وحدة التصنيع (ORDRAX) — جداول ──────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS manufacturing_orders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_number VARCHAR(30) UNIQUE NOT NULL,
+        customer_id UUID NOT NULL REFERENCES users(id),
+        factory_id UUID REFERENCES users(id),
+        product VARCHAR(300) NOT NULL,
+        specs TEXT,
+        quantity VARCHAR(100),
+        total_amount NUMERIC(15,2) DEFAULT 0,
+        currency VARCHAR(10) DEFAULT 'SAR',
+        status VARCHAR(30) DEFAULT 'pending_match' CHECK (status IN ('pending_match','in_production','completed','cancelled')),
+        released_amount NUMERIC(15,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS production_stages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id UUID NOT NULL REFERENCES manufacturing_orders(id) ON DELETE CASCADE,
+        seq INTEGER NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        payment_pct NUMERIC(5,2) DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','in_progress','qa_review','passed','failed')),
+        qa_note TEXT,
+        released BOOLEAN DEFAULT FALSE,
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router  = express.Router();
 const { auth, requireRole } = require('../middleware/auth');
+const mfgC = require('../controllers/manufacturingController');
 const authC = require('../controllers/authController');
 const rfqC  = require('../controllers/rfqController');
 const mainC = require('../controllers/mainController');
@@ -46,6 +47,15 @@ router.put ('/installments/:id/confirm', auth, requireRole('admin','owner'), mai
 router.get ('/deals', auth, mainC.listDeals);
 router.get ('/financing/agreements', auth, mainC.listAgreements);
 router.put ('/financing/requests/:id/sign', auth, mainC.signAgreement);
+
+// Manufacturing (ORDRAX)
+router.post('/manufacturing/orders',                 auth, requireRole('buyer','admin','owner'), mfgC.createOrder);
+router.get ('/manufacturing/orders',                 auth, mfgC.listOrders);
+router.get ('/manufacturing/orders/:id/stages',      auth, mfgC.getStages);
+router.put ('/manufacturing/orders/:id/match',       auth, requireRole('admin','owner'), mfgC.matchFactory);
+router.put ('/manufacturing/stages/:id/progress',    auth, requireRole('supplier','admin','owner'), mfgC.stageProgress);
+router.put ('/manufacturing/stages/:id/qa',          auth, requireRole('admin','owner'), mfgC.stageQA);
+router.get ('/manufacturing/factories',              auth, requireRole('admin','owner'), mfgC.listFactories);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);

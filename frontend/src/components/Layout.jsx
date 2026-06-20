@@ -8,7 +8,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -19,6 +19,7 @@ const navItems = {
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'طلبات الشراء' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
+    { to:'/manufacturing',icon:Factory,         label:'التصنيع' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
@@ -29,6 +30,7 @@ const navItems = {
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الفرص المتاحة' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
+    { to:'/manufacturing',icon:Factory,         label:'التصنيع' },
     { to:'/invoices',     icon:Receipt,          label:'فواتيري' },
     { to:'/financing',    icon:Banknote,         label:'تمويل فواتيري' },
   ],
@@ -42,6 +44,7 @@ const navItems = {
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
+    { to:'/manufacturing',icon:Factory,         label:'التصنيع' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
     { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },
@@ -53,6 +56,7 @@ const navItems = {
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
+    { to:'/manufacturing',icon:Factory,         label:'التصنيع' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
     { to:'/agreements',   icon:FileSignature,    label:'العقود' },
     { to:'/invoices',     icon:Receipt,          label:'الفواتير' },

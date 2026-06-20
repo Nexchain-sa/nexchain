@@ -96,4 +96,14 @@ export const installmentAPI = {
 
 export const dealAPI = { list: () => API.get('/deals') };
 
+export const mfgAPI = {
+  list:        ()        => API.get('/manufacturing/orders'),
+  create:      (data)    => API.post('/manufacturing/orders', data),
+  stages:      (id)      => API.get(`/manufacturing/orders/${id}/stages`),
+  match:       (id,data) => API.put(`/manufacturing/orders/${id}/match`, data),
+  progress:    (sid,data)=> API.put(`/manufacturing/stages/${sid}/progress`, data),
+  qa:          (sid,data)=> API.put(`/manufacturing/stages/${sid}/qa`, data),
+  factories:   ()        => API.get('/manufacturing/factories'),
+};
+
 export default API;

@@ -1,0 +1,163 @@
+import React, { useState, useEffect } from 'react';
+import { mfgAPI } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { Factory, Plus, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const STAGE_STATUS = {
+  pending:     { label: 'بانتظار',       color: '#64748B', bg: '#F1F5F9' },
+  in_progress: { label: 'قيد التنفيذ',   color: '#4F46E5', bg: '#EEF2FF' },
+  qa_review:   { label: 'بانتظار الفحص', color: '#D97706', bg: '#FEF3C7' },
+  passed:      { label: 'مجتاز',         color: '#059669', bg: '#ECFDF5' },
+  failed:      { label: 'مرفوض',         color: '#DC2626', bg: '#FEE2E2' },
+};
+const ORDER_STATUS = {
+  pending_match: { label: 'بانتظار إسناد مصنع', color: '#D97706', bg: '#FEF3C7' },
+  in_production: { label: 'قيد الإنتاج',        color: '#4F46E5', bg: '#EEF2FF' },
+  completed:     { label: 'مكتمل',              color: '#059669', bg: '#ECFDF5' },
+  cancelled:     { label: 'ملغى',               color: '#DC2626', bg: '#FEE2E2' },
+};
+
+export default function Manufacturing() {
+  const { user } = useAuth();
+  const { t, dir } = useLang();
+  const { fmt } = useCurrency();
+  const role = user?.role;
+  const isBuyer = role === 'buyer';
+  const isFactory = role === 'supplier';
+  const isAdmin = ['admin', 'owner'].includes(role);
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+  const [stages, setStages] = useState([]);
+  const [busy, setBusy] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ product: '', specs: '', quantity: '', total_amount: '' });
+  const [factories, setFactories] = useState([]);
+  const [matchSel, setMatchSel] = useState({});
+
+  const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
+  useEffect(() => { load(); if (isAdmin) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
+
+  const openOrder = async (o) => {
+    if (expanded === o.id) { setExpanded(null); return; }
+    setExpanded(o.id);
+    const r = await mfgAPI.stages(o.id); setStages(r.data.data || []);
+  };
+  const reloadStages = async (oid) => { const r = await mfgAPI.stages(oid); setStages(r.data.data || []); load(); };
+
+  const create = async (e) => {
+    e.preventDefault(); setBusy('create');
+    try { await mfgAPI.create(form); toast.success(t('تم إنشاء أمر التصنيع')); setShowCreate(false); setForm({ product: '', specs: '', quantity: '', total_amount: '' }); load(); }
+    catch (err) { toast.error(err.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const match = async (oid) => {
+    if (!matchSel[oid]) return toast.error(t('اختر مصنعًا'));
+    setBusy(oid);
+    try { await mfgAPI.match(oid, { factory_id: matchSel[oid] }); toast.success(t('تم إسناد المصنع')); load(); }
+    catch { toast.error(t('خطأ')); } finally { setBusy(null); }
+  };
+  const progress = async (sid, status, oid) => { setBusy(sid); try { await mfgAPI.progress(sid, { status }); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
+  const qa = async (sid, pass, oid) => { setBusy(sid); try { const r = await mfgAPI.qa(sid, { pass }); toast.success(r.data.message); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
+
+  const inp = "w-full rounded-xl px-4 py-2.5 text-sm border focus:outline-none";
+
+  return (
+    <div className="font-arabic space-y-5" dir={dir}>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Factory size={22} style={{ color: '#4F46E5' }} /> {t('التصنيع')}</h1>
+        {isBuyer && <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#4F46E5' }}><Plus size={15} /> {t('أمر تصنيع جديد')}</button>}
+      </div>
+
+      {loading ? <p className="text-center text-slate-400 py-12">{t('جارٍ التحميل...')}</p>
+        : orders.length === 0 ? (
+          <div className="bg-white rounded-2xl border py-14 text-center" style={{ borderColor: '#E5E7EF' }}>
+            <Factory size={36} className="mx-auto text-slate-300 mb-2" />
+            <p className="text-slate-400">{t('لا توجد أوامر تصنيع بعد.')}</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {orders.map(o => {
+              const os = ORDER_STATUS[o.status] || ORDER_STATUS.pending_match;
+              const held = Number(o.total_amount) - Number(o.released_amount || 0);
+              return (
+                <div key={o.id} className="bg-white rounded-2xl border" style={{ borderColor: '#E5E7EF' }}>
+                  <div className="p-4 flex items-center gap-3 flex-wrap cursor-pointer" onClick={() => openOrder(o)}>
+                    <div className="flex-1 min-w-[180px]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-800">{o.order_number}</span>
+                        <span className="text-xs text-slate-400">{o.product}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{o.customer_name || '-'} {o.factory_name ? `← ${o.factory_name}` : ''}</p>
+                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: os.bg, color: os.color }}>{t(os.label)}</span>
+                    <div className="text-left">
+                      <p className="text-sm font-bold" style={{ color: '#059669' }}>{t('مُفرَج')}: {fmt(o.released_amount)}</p>
+                      <p className="text-[11px] text-slate-400">{t('محتجَز')}: {fmt(held)} · {o.stage_done}/{o.stage_total}</p>
+                    </div>
+                    <ChevronDown size={16} className="text-slate-400" style={{ transform: expanded === o.id ? 'rotate(180deg)' : 'none' }} />
+                  </div>
+
+                  {expanded === o.id && (
+                    <div className="border-t p-4 space-y-2" style={{ borderColor: '#F1F5F9' }}>
+                      {isAdmin && o.status === 'pending_match' && (
+                        <div className="flex gap-2 items-center bg-[#F8FAFC] rounded-xl p-2">
+                          <select value={matchSel[o.id] || ''} onChange={e => setMatchSel({ ...matchSel, [o.id]: e.target.value })} className={inp} style={{ borderColor: '#E5E7EF' }}>
+                            <option value="">{t('اختر مصنعًا')}</option>
+                            {factories.map(f => <option key={f.id} value={f.id}>{f.company_name || f.name}</option>)}
+                          </select>
+                          <button onClick={() => match(o.id)} disabled={busy === o.id} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold flex-shrink-0" style={{ background: '#4F46E5' }}>{t('إسناد المصنع')}</button>
+                        </div>
+                      )}
+                      {stages.map(s => {
+                        const ss = STAGE_STATUS[s.status] || STAGE_STATUS.pending;
+                        return (
+                          <div key={s.id} className="flex items-center gap-3 border rounded-xl p-3" style={{ borderColor: '#E5E7EF' }}>
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: ss.bg, color: ss.color }}>{s.seq}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-slate-700">{t(s.name)} <span className="text-xs text-slate-400">· {Number(s.payment_pct)}%</span></p>
+                              {s.qa_note && <p className="text-[11px] text-red-500">{s.qa_note}</p>}
+                            </div>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ background: ss.bg, color: ss.color }}>{t(ss.label)}</span>
+                            {isFactory && o.status === 'in_production' && s.status === 'pending' && <button onClick={() => progress(s.id, 'in_progress', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#EEF2FF', color: '#4F46E5' }}>{t('بدء')}</button>}
+                            {isFactory && s.status === 'in_progress' && <button onClick={() => progress(s.id, 'qa_review', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>{t('تم الإنجاز (للفحص)')}</button>}
+                            {isAdmin && s.status === 'qa_review' && (
+                              <div className="flex gap-1">
+                                <button onClick={() => qa(s.id, true, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1" style={{ background: '#ECFDF5', color: '#059669' }}><CheckCircle size={12} /> {t('اعتماد')}</button>
+                                <button onClick={() => qa(s.id, false, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1" style={{ background: '#FEE2E2', color: '#DC2626' }}><XCircle size={12} /> {t('رفض')}</button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir={dir} onClick={() => setShowCreate(false)}>
+          <form onSubmit={create} onClick={e => e.stopPropagation()} className="bg-white rounded-2xl p-6 w-full max-w-md space-y-3">
+            <h3 className="font-bold text-lg text-slate-800">{t('أمر تصنيع جديد')}</h3>
+            <input required placeholder={t('المنتج')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.product} onChange={e => setForm({ ...form, product: e.target.value })} />
+            <textarea placeholder={t('المواصفات')} rows={2} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder={t('الكمية')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
+              <input required type="number" placeholder={t('القيمة (SAR)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} />
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={busy === 'create'} className="flex-1 py-2.5 rounded-xl text-white font-bold" style={{ background: '#4F46E5' }}>{busy === 'create' ? t('جارٍ...') : t('إنشاء الأمر')}</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
