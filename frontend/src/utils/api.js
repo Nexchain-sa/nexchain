@@ -108,4 +108,6 @@ export const mfgAPI = {
   suggest:     (id)      => API.get(`/manufacturing/orders/${id}/suggest`),
 };
 
+export const analyticsAPI = { impact: () => API.get('/impact') };
+
 export default API;

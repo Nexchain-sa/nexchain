@@ -2,6 +2,7 @@ const express = require('express');
 const router  = express.Router();
 const { auth, requireRole } = require('../middleware/auth');
 const mfgC = require('../controllers/manufacturingController');
+const anC = require('../controllers/analyticsController');
 const authC = require('../controllers/authController');
 const rfqC  = require('../controllers/rfqController');
 const mainC = require('../controllers/mainController');
@@ -58,6 +59,7 @@ router.put ('/manufacturing/stages/:id/qa',          auth, requireRole('admin','
 router.get ('/manufacturing/factories',              auth, requireRole('admin','owner'), mfgC.listFactories);
 router.post('/manufacturing/estimate',               auth, mfgC.estimate);
 router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
+router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
