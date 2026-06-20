@@ -3,6 +3,64 @@ const pool = require('../config/db');
 const genNum = (p) => `${p}-${Date.now().toString().slice(-8)}`;
 
 // قالب مراحل الإنتاج مع نسبة الدفعة لكل مرحلة (المجموع 100%)
+
+// محرّك التسعير الآلي (نماذج تكلفة معيارية)
+const CATS = {
+  apparel:     { base: 45,  lead: 14 },
+  textile:     { base: 30,  lead: 18 },
+  packaging:   { base: 8,   lead: 10 },
+  promotional: { base: 20,  lead: 12 },
+  furniture:   { base: 120, lead: 25 },
+};
+const COMPLEXITY = { simple: 1.0, medium: 1.35, complex: 1.8 };
+function estimatePrice(category, complexity, quantity) {
+  const c = CATS[category] || CATS.apparel;
+  const cm = COMPLEXITY[complexity] || 1.0;
+  const qty = Math.max(1, Number(quantity) || 1);
+  const qd = qty >= 1000 ? 0.85 : qty >= 500 ? 0.92 : qty >= 100 ? 0.97 : 1.0;
+  const unit = Math.round(c.base * cm * qd * 100) / 100;
+  const total = Math.round(unit * qty);
+  const lead = Math.round(c.lead * (cm > 1.5 ? 1.4 : cm > 1.2 ? 1.2 : 1));
+  return { unit_cost: unit, total, lead_days: lead, qty_discount_pct: Math.round((1 - qd) * 100), complexity_mult: cm };
+}
+
+exports.estimate = (req, res) => {
+  const { category, complexity, quantity } = req.body;
+  res.json({ success: true, data: estimatePrice(category, complexity, quantity) });
+};
+
+exports.suggest = async (req, res) => {
+  try {
+    const { rows: ord } = await pool.query(`SELECT category, quantity FROM manufacturing_orders WHERE id=$1`, [req.params.id]);
+    if (!ord.length) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    const category = ord[0].category || 'apparel';
+    const qty = Number(ord[0].quantity) || 0;
+    const { rows: facs } = await pool.query(`
+      SELECT id, company_name, name, rating,
+             COALESCE(mfg_specialties,'[]'::jsonb) AS mfg_specialties,
+             COALESCE(mfg_capacity,1000) AS mfg_capacity,
+             COALESCE(mfg_lead_days,14) AS mfg_lead_days
+      FROM users WHERE role='supplier' AND is_approved=true`);
+    const scored = facs.map(f => {
+      const spec = Array.isArray(f.mfg_specialties) ? f.mfg_specialties : [];
+      const catMatch = spec.includes(category);
+      const catScore = catMatch ? 40 : 12;
+      const leadScore = Math.max(0, Math.round(30 * (1 - Math.min(Number(f.mfg_lead_days), 30) / 30)));
+      const ratingScore = Math.round(20 * (Number(f.rating || 0) / 5));
+      const capScore = Number(f.mfg_capacity) >= qty ? 10 : 0;
+      const score = catScore + leadScore + ratingScore + capScore;
+      const reasons = [
+        catMatch ? 'تخصص مطابق' : 'تخصص جزئي',
+        `مهلة ${f.mfg_lead_days} يوم`,
+        `تقييم ${Number(f.rating || 0)}`,
+        Number(f.mfg_capacity) >= qty ? 'سعة كافية' : 'سعة محدودة',
+      ];
+      return { id: f.id, name: f.company_name || f.name, score, lead_days: f.mfg_lead_days, rating: Number(f.rating || 0), capacity: f.mfg_capacity, reasons };
+    }).sort((a, b) => b.score - a.score);
+    res.json({ success: true, data: scored });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
 const STAGE_TEMPLATE = [
   { name: 'تحضير المواد',        pct: 15 },
   { name: 'الإنتاج',             pct: 40 },
@@ -16,12 +74,13 @@ exports.createOrder = async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { product, specs, quantity, total_amount, currency } = req.body;
+    const { product, specs, quantity, total_amount, currency, category, complexity } = req.body;
+    const finalTotal = Number(total_amount) || estimatePrice(category, complexity, quantity).total;
     const num = genNum('MFG');
     const { rows } = await client.query(
-      `INSERT INTO manufacturing_orders(order_number,customer_id,product,specs,quantity,total_amount,currency,status)
-       VALUES($1,$2,$3,$4,$5,$6,$7,'pending_match') RETURNING *`,
-      [num, req.user.id, product, specs || null, quantity || null, Number(total_amount) || 0, currency || 'SAR']
+      `INSERT INTO manufacturing_orders(order_number,customer_id,product,specs,quantity,total_amount,currency,status,category,complexity)
+       VALUES($1,$2,$3,$4,$5,$6,$7,'pending_match',$8,$9) RETURNING *`,
+      [num, req.user.id, product, specs || null, quantity || null, finalTotal, currency || 'SAR', category || 'apparel', complexity || 'simple']
     );
     const order = rows[0];
     let seq = 1;

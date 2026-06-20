@@ -104,6 +104,8 @@ export const mfgAPI = {
   progress:    (sid,data)=> API.put(`/manufacturing/stages/${sid}/progress`, data),
   qa:          (sid,data)=> API.put(`/manufacturing/stages/${sid}/qa`, data),
   factories:   ()        => API.get('/manufacturing/factories'),
+  estimate:    (data)    => API.post('/manufacturing/estimate', data),
+  suggest:     (id)      => API.get(`/manufacturing/orders/${id}/suggest`),
 };
 
 export default API;

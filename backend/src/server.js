@@ -300,6 +300,13 @@ const autoSetup = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    // ذكاء التصنيع: أعمدة + سمات المصانع
+    await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS category VARCHAR(40)`).catch(()=>{});
+    await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS complexity VARCHAR(20)`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});
+    await client.query(`UPDATE users SET mfg_specialties='["apparel","textile"]'::jsonb, mfg_capacity=5000, mfg_lead_days=9, rating=4.6 WHERE email='supplier@demo.com'`).catch(()=>{});
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {

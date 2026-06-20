@@ -3,7 +3,7 @@ import { mfgAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Factory, Plus, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { Factory, Plus, CheckCircle, XCircle, ChevronDown, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STAGE_STATUS = {
@@ -20,6 +20,9 @@ const ORDER_STATUS = {
   cancelled:     { label: 'ملغى',               color: '#DC2626', bg: '#FEE2E2' },
 };
 
+const CATEGORIES = [['apparel','ملابس'],['textile','نسيج منزلي'],['packaging','تغليف'],['promotional','منتجات ترويجية'],['furniture','أثاث وتشطيب']];
+const COMPLEXITIES = [['simple','بسيط'],['medium','متوسط'],['complex','معقّد']];
+
 export default function Manufacturing() {
   const { user } = useAuth();
   const { t, dir } = useLang();
@@ -35,12 +38,15 @@ export default function Manufacturing() {
   const [stages, setStages] = useState([]);
   const [busy, setBusy] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ product: '', specs: '', quantity: '', total_amount: '' });
+  const [form, setForm] = useState({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple' });
+  const [est, setEst] = useState(null);
+  const [sugg, setSugg] = useState({});
   const [factories, setFactories] = useState([]);
   const [matchSel, setMatchSel] = useState({});
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); if (isAdmin) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
+  useEffect(() => { if (!showCreate) return; mfgAPI.estimate({ category: form.category, complexity: form.complexity, quantity: form.quantity }).then(r => setEst(r.data.data)).catch(() => {}); }, [showCreate, form.category, form.complexity, form.quantity]);
 
   const openOrder = async (o) => {
     if (expanded === o.id) { setExpanded(null); return; }
@@ -51,7 +57,7 @@ export default function Manufacturing() {
 
   const create = async (e) => {
     e.preventDefault(); setBusy('create');
-    try { await mfgAPI.create(form); toast.success(t('تم إنشاء أمر التصنيع')); setShowCreate(false); setForm({ product: '', specs: '', quantity: '', total_amount: '' }); load(); }
+    try { await mfgAPI.create(form); toast.success(t('تم إنشاء أمر التصنيع')); setShowCreate(false); setForm({ product: '', specs: '', quantity: '', total_amount: '', category: 'apparel', complexity: 'simple' }); load(); }
     catch (err) { toast.error(err.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
   };
   const match = async (oid) => {
@@ -60,6 +66,8 @@ export default function Manufacturing() {
     try { await mfgAPI.match(oid, { factory_id: matchSel[oid] }); toast.success(t('تم إسناد المصنع')); load(); }
     catch { toast.error(t('خطأ')); } finally { setBusy(null); }
   };
+  const loadSugg = async (oid) => { try { const r = await mfgAPI.suggest(oid); setSugg(x => ({ ...x, [oid]: r.data.data || [] })); } catch { toast.error(t('خطأ')); } };
+  const matchTo = async (oid, fid) => { setBusy(oid); try { await mfgAPI.match(oid, { factory_id: fid }); toast.success(t('تم إسناد المصنع')); load(); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
   const progress = async (sid, status, oid) => { setBusy(sid); try { await mfgAPI.progress(sid, { status }); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
   const qa = async (sid, pass, oid) => { setBusy(sid); try { const r = await mfgAPI.qa(sid, { pass }); toast.success(r.data.message); reloadStages(oid); } catch { toast.error(t('خطأ')); } finally { setBusy(null); } };
 
@@ -104,6 +112,18 @@ export default function Manufacturing() {
                   {expanded === o.id && (
                     <div className="border-t p-4 space-y-2" style={{ borderColor: '#F1F5F9' }}>
                       {isAdmin && o.status === 'pending_match' && (
+                       <div className="space-y-2">
+                        <button onClick={()=>loadSugg(o.id)} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{background:'#EEF2FF',color:'#4F46E5'}}><Sparkles size={13}/> {t('🤖 اقتراح ذكي للمصنع')}</button>
+                        {(sugg[o.id]||[]).map((f,idx)=>(
+                          <div key={f.id} className="flex items-center gap-2 border rounded-xl p-2 text-xs" style={{borderColor: idx===0?'#4F46E5':'#E5E7EF', background: idx===0?'#F5F3FF':'#FFFFFF'}}>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold flex-shrink-0" style={{background:'#EEF2FF',color:'#4F46E5'}}>{f.score}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-slate-700 truncate">{f.name} {idx===0 && <span style={{color:'#4F46E5'}}>★</span>}</p>
+                              <p className="text-[11px] text-slate-400 truncate">{f.reasons.join(' · ')}</p>
+                            </div>
+                            <button onClick={()=>matchTo(o.id, f.id)} disabled={busy===o.id} className="px-3 py-1.5 rounded-lg text-white font-bold flex-shrink-0" style={{background:'#4F46E5'}}>{t('إسناد')}</button>
+                          </div>
+                        ))}
                         <div className="flex gap-2 items-center bg-[#F8FAFC] rounded-xl p-2">
                           <select value={matchSel[o.id] || ''} onChange={e => setMatchSel({ ...matchSel, [o.id]: e.target.value })} className={inp} style={{ borderColor: '#E5E7EF' }}>
                             <option value="">{t('اختر مصنعًا')}</option>
@@ -111,6 +131,7 @@ export default function Manufacturing() {
                           </select>
                           <button onClick={() => match(o.id)} disabled={busy === o.id} className="px-4 py-2.5 rounded-xl text-white text-sm font-bold flex-shrink-0" style={{ background: '#4F46E5' }}>{t('إسناد المصنع')}</button>
                         </div>
+                       </div>
                       )}
                       {stages.map(s => {
                         const ss = STAGE_STATUS[s.status] || STAGE_STATUS.pending;
@@ -146,11 +167,29 @@ export default function Manufacturing() {
           <form onSubmit={create} onClick={e => e.stopPropagation()} className="bg-white rounded-2xl p-6 w-full max-w-md space-y-3">
             <h3 className="font-bold text-lg text-slate-800">{t('أمر تصنيع جديد')}</h3>
             <input required placeholder={t('المنتج')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.product} onChange={e => setForm({ ...form, product: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <select className={inp} style={{ borderColor: '#E5E7EF' }} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                {CATEGORIES.map(([k,l]) => <option key={k} value={k}>{t(l)}</option>)}
+              </select>
+              <select className={inp} style={{ borderColor: '#E5E7EF' }} value={form.complexity} onChange={e => setForm({ ...form, complexity: e.target.value })}>
+                {COMPLEXITIES.map(([k,l]) => <option key={k} value={k}>{t(l)}</option>)}
+              </select>
+            </div>
             <textarea placeholder={t('المواصفات')} rows={2} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.specs} onChange={e => setForm({ ...form, specs: e.target.value })} />
             <div className="grid grid-cols-2 gap-3">
               <input placeholder={t('الكمية')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} />
-              <input required type="number" placeholder={t('القيمة (SAR)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} />
+              <input type="number" placeholder={t('اتركه فارغًا لاستخدام السعر التقديري')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} />
             </div>
+            {est && (
+              <div className="rounded-xl p-3 text-xs" style={{ background:'#EEF2FF', color:'#3730A3' }}>
+                <div className="flex items-center gap-1 font-bold mb-1"><Sparkles size={13}/> {t('السعر المعياري التقديري')}</div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span>{t('الإجمالي')}: <b>{fmt(est.total)}</b></span>
+                  <span>{t('سعر الوحدة')}: {fmt(est.unit_cost)}</span>
+                  <span>{t('مهلة')}: {est.lead_days} {t('يوم')}</span>
+                </div>
+              </div>
+            )}
             <div className="flex gap-2">
               <button type="submit" disabled={busy === 'create'} className="flex-1 py-2.5 rounded-xl text-white font-bold" style={{ background: '#4F46E5' }}>{busy === 'create' ? t('جارٍ...') : t('إنشاء الأمر')}</button>
               <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>

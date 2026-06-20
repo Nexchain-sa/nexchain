@@ -56,6 +56,8 @@ router.put ('/manufacturing/orders/:id/match',       auth, requireRole('admin','
 router.put ('/manufacturing/stages/:id/progress',    auth, requireRole('supplier','admin','owner'), mfgC.stageProgress);
 router.put ('/manufacturing/stages/:id/qa',          auth, requireRole('admin','owner'), mfgC.stageQA);
 router.get ('/manufacturing/factories',              auth, requireRole('admin','owner'), mfgC.listFactories);
+router.post('/manufacturing/estimate',               auth, mfgC.estimate);
+router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
 
 // ── COMPETITIONS ──────────────────────────────────────────────────────────────
 router.get ('/competitions',                          auth, mainC.listCompetitions);
