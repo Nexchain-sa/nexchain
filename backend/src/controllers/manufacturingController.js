@@ -100,14 +100,17 @@ exports.createOrder = async (req, res) => {
 exports.listOrders = async (req, res) => {
   try {
     const role = req.user.role;
-    let where, params;
-    if (['admin', 'owner'].includes(role)) { where = ''; params = []; }
-    else if (role === 'supplier') { where = 'WHERE o.factory_id=$1'; params = [req.user.id]; }
-    else { where = 'WHERE o.customer_id=$1'; params = [req.user.id]; }
+    const params = [req.user.id]; // $1 = current user (used by my_offer subquery)
+    let where;
+    if (['admin', 'owner'].includes(role)) where = '';
+    else if (role === 'supplier') where = `WHERE (o.factory_id=$1 OR o.status='pending_match')`;
+    else where = 'WHERE o.customer_id=$1';
     const { rows } = await pool.query(`
       SELECT o.*, c.company_name AS customer_name, f.company_name AS factory_name,
         (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id) AS stage_total,
-        (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id AND s.status='passed') AS stage_done
+        (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id AND s.status='passed') AS stage_done,
+        (SELECT COUNT(*)::int FROM manufacturing_offers mo WHERE mo.order_id=o.id) AS offer_count,
+        (SELECT row_to_json(x) FROM (SELECT offered_price, lead_days, status FROM manufacturing_offers WHERE order_id=o.id AND factory_id=$1) x) AS my_offer
       FROM manufacturing_orders o
       LEFT JOIN users c ON c.id=o.customer_id
       LEFT JOIN users f ON f.id=o.factory_id
@@ -116,6 +119,84 @@ exports.listOrders = async (req, res) => {
     `, params);
     res.json({ success: true, data: rows });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+// ── سوق التصنيع: عروض المصانع ──────────────────────────────
+exports.submitOffer = async (req, res) => {
+  try {
+    const { offered_price, lead_days, note } = req.body;
+    if (!offered_price || Number(offered_price) <= 0) return res.status(400).json({ success: false, message: 'أدخل سعرًا صحيحًا' });
+    const { rows: ord } = await pool.query(`SELECT status FROM manufacturing_orders WHERE id=$1`, [req.params.id]);
+    if (!ord.length) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    if (ord[0].status !== 'pending_match') return res.status(400).json({ success: false, message: 'الطلب لم يعد مفتوحًا للعروض' });
+    const { rows } = await pool.query(`
+      INSERT INTO manufacturing_offers(order_id,factory_id,offered_price,lead_days,note)
+      VALUES($1,$2,$3,$4,$5)
+      ON CONFLICT(order_id,factory_id) DO UPDATE SET offered_price=$3, lead_days=$4, note=$5, status='pending', created_at=NOW()
+      RETURNING *`,
+      [req.params.id, req.user.id, offered_price, lead_days || null, note || null]);
+    res.status(201).json({ success: true, data: rows[0], message: 'تم إرسال العرض' });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.listOffers = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT o.*, f.company_name AS factory_name, f.name AS factory_person, COALESCE(f.rating,0) AS factory_rating
+      FROM manufacturing_offers o JOIN users f ON f.id=o.factory_id
+      WHERE o.order_id=$1 ORDER BY o.offered_price ASC`, [req.params.id]);
+    res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.acceptOffer = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: off } = await client.query(
+      `SELECT o.*, m.customer_id, m.status AS order_status FROM manufacturing_offers o JOIN manufacturing_orders m ON m.id=o.order_id WHERE o.id=$1`,
+      [req.params.id]);
+    if (!off.length) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: 'العرض غير موجود' }); }
+    const offer = off[0];
+    const isAdmin = ['admin', 'owner'].includes(req.user.role);
+    if (!isAdmin && offer.customer_id !== req.user.id) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: 'ليس طلبك' }); }
+    if (offer.order_status !== 'pending_match') { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'الطلب لم يعد مفتوحًا' }); }
+    await client.query(
+      `UPDATE manufacturing_orders SET factory_id=$1, status='in_production', total_amount=$2, escrow_funded=$2 WHERE id=$3`,
+      [offer.factory_id, offer.offered_price, offer.order_id]);
+    await client.query(`UPDATE manufacturing_offers SET status='accepted' WHERE id=$1`, [offer.id]);
+    await client.query(`UPDATE manufacturing_offers SET status='rejected' WHERE order_id=$1 AND id<>$2`, [offer.order_id, offer.id]);
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'تم قبول العرض وبدء التصنيع' });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
+};
+
+// ── تمويل أمر التصنيع (يُنشئ فاتورة + طلب تمويل) ──────────────
+exports.financeOrder = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: ord } = await client.query(`SELECT * FROM manufacturing_orders WHERE id=$1`, [req.params.id]);
+    if (!ord.length) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: 'الطلب غير موجود' }); }
+    const order = ord[0];
+    const isAdmin = ['admin', 'owner'].includes(req.user.role);
+    if (!isAdmin && order.customer_id !== req.user.id) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: 'ليس طلبك' }); }
+    if (!order.factory_id) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'عيّن مصنعًا أولاً' }); }
+    if (order.financing_request_id) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'سبق تقديم طلب تمويل لهذا الأمر' }); }
+    const amount = Number(order.total_amount) || 0;
+    const { rows: inv } = await client.query(
+      `INSERT INTO invoices(invoice_number,buyer_id,supplier_id,amount,due_date,status,notes)
+       VALUES($1,$2,$3,$4, CURRENT_DATE + interval '90 days','financing_requested',$5) RETURNING *`,
+      [genNum('INV'), order.customer_id, order.factory_id, amount, 'تمويل أمر تصنيع ' + order.order_number]);
+    const { rows: fr } = await client.query(
+      `INSERT INTO financing_requests(invoice_id,requester_id,requested_amount,financing_type) VALUES($1,$2,$3,'fund') RETURNING *`,
+      [inv[0].id, order.customer_id, amount]);
+    await client.query(`UPDATE manufacturing_orders SET invoice_id=$1, financing_request_id=$2 WHERE id=$3`, [inv[0].id, fr[0].id, order.id]);
+    await client.query('COMMIT');
+    res.json({ success: true, data: fr[0], message: 'تم تقديم طلب تمويل التصنيع — سيظهر للممولين' });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
 };
 
 exports.getStages = async (req, res) => {

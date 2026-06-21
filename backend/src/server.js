@@ -304,6 +304,22 @@ const autoSetup = async () => {
     await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS category VARCHAR(40)`).catch(()=>{});
     await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS complexity VARCHAR(20)`).catch(()=>{});
     await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS escrow_funded NUMERIC(15,2) DEFAULT 0`).catch(()=>{});
+    await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS invoice_id UUID`).catch(()=>{});
+    await client.query(`ALTER TABLE manufacturing_orders ADD COLUMN IF NOT EXISTS financing_request_id UUID`).catch(()=>{});
+    // سوق التصنيع: عروض المصانع على الطلبات المفتوحة
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS manufacturing_offers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id UUID NOT NULL REFERENCES manufacturing_orders(id) ON DELETE CASCADE,
+        factory_id UUID NOT NULL REFERENCES users(id),
+        offered_price NUMERIC(15,2) NOT NULL,
+        lead_days INTEGER,
+        note TEXT,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending','accepted','rejected')),
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(order_id, factory_id)
+      );
+    `).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});

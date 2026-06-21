@@ -61,6 +61,10 @@ router.put ('/manufacturing/stages/:id/receive',     auth, requireRole('buyer','
 router.get ('/manufacturing/factories',              auth, mfgC.listFactories);
 router.post('/manufacturing/estimate',               auth, mfgC.estimate);
 router.get ('/manufacturing/orders/:id/suggest',     auth, requireRole('admin','owner'), mfgC.suggest);
+router.post('/manufacturing/orders/:id/offers',      auth, requireRole('supplier'), mfgC.submitOffer);
+router.get ('/manufacturing/orders/:id/offers',      auth, requireRole('buyer','admin','owner'), mfgC.listOffers);
+router.put ('/manufacturing/offers/:id/accept',      auth, requireRole('buyer','admin','owner'), mfgC.acceptOffer);
+router.post('/manufacturing/orders/:id/finance',     auth, requireRole('buyer','admin','owner'), mfgC.financeOrder);
 router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
 router.get ('/financing/portfolio', auth, requireRole('investor','admin','owner'), anC.portfolio);
 router.get ('/financing/auto-invest', auth, requireRole('investor','admin','owner'), mainC.getAutoInvest);

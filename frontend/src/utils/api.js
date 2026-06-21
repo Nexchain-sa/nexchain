@@ -110,6 +110,10 @@ export const mfgAPI = {
   factories:   ()        => API.get('/manufacturing/factories'),
   estimate:    (data)    => API.post('/manufacturing/estimate', data),
   suggest:     (id)      => API.get(`/manufacturing/orders/${id}/suggest`),
+  submitOffer: (id,data) => API.post(`/manufacturing/orders/${id}/offers`, data),
+  offers:      (id)      => API.get(`/manufacturing/orders/${id}/offers`),
+  acceptOffer: (oid)     => API.put(`/manufacturing/offers/${oid}/accept`),
+  finance:     (id)      => API.post(`/manufacturing/orders/${id}/finance`),
 };
 
 export const analyticsAPI = { impact: () => API.get('/impact') };

@@ -3,7 +3,7 @@ import { mfgAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Factory, Plus, CheckCircle, XCircle, ChevronDown, Sparkles } from 'lucide-react';
+import { Factory, Plus, CheckCircle, XCircle, ChevronDown, Sparkles, Banknote, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STAGE_STATUS = {
@@ -43,17 +43,39 @@ export default function Manufacturing() {
   const [sugg, setSugg] = useState({});
   const [factories, setFactories] = useState([]);
   const [matchSel, setMatchSel] = useState({});
+  const [offers, setOffers] = useState({});
+  const [offerForm, setOfferForm] = useState({});
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); if (isAdmin || isBuyer) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
   useEffect(() => { if (!showCreate) return; mfgAPI.estimate({ category: form.category, complexity: form.complexity, quantity: form.quantity }).then(r => setEst(r.data.data)).catch(() => {}); }, [showCreate, form.category, form.complexity, form.quantity]);
 
+  const loadOffers = async (oid) => { try { const r = await mfgAPI.offers(oid); setOffers(x => ({ ...x, [oid]: r.data.data || [] })); } catch {} };
   const openOrder = async (o) => {
     if (expanded === o.id) { setExpanded(null); return; }
     setExpanded(o.id);
     const r = await mfgAPI.stages(o.id); setStages(r.data.data || []);
+    if ((isBuyer || isAdmin) && o.status === 'pending_match') loadOffers(o.id);
   };
   const reloadStages = async (oid) => { const r = await mfgAPI.stages(oid); setStages(r.data.data || []); load(); };
+
+  const submitOffer = async (oid) => {
+    const f = offerForm[oid] || {};
+    if (!f.offered_price) return toast.error(t('أدخل السعر'));
+    setBusy('offer' + oid);
+    try { await mfgAPI.submitOffer(oid, { offered_price: f.offered_price, lead_days: f.lead_days, note: f.note }); toast.success(t('تم إرسال العرض')); setOfferForm(x => ({ ...x, [oid]: {} })); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const acceptOffer = async (offerId, oid) => {
+    setBusy(offerId);
+    try { const r = await mfgAPI.acceptOffer(offerId); toast.success(r.data.message); setExpanded(null); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const financeOrder = async (oid) => {
+    setBusy('fin' + oid);
+    try { const r = await mfgAPI.finance(oid); toast.success(r.data.message); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
 
   const create = async (e) => {
     e.preventDefault(); setBusy('create');
@@ -104,14 +126,59 @@ export default function Manufacturing() {
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: os.bg, color: os.color }}>{t(os.label)}</span>
                     <div className="text-left">
-                      <p className="text-sm font-bold" style={{ color: '#059669' }}>{t('مُفرَج')}: {fmt(o.released_amount)}</p>
-                      <p className="text-[11px] text-slate-400">🛡️ {t('مضمون في الضمان')}: {fmt(held)} · {o.stage_done}/{o.stage_total}</p>
+                      {o.status === 'pending_match' ? (
+                        <p className="text-sm font-bold" style={{ color: '#D97706' }}>{o.offer_count || 0} {t('عرض')}</p>
+                      ) : (
+                        <>
+                          <p className="text-sm font-bold" style={{ color: '#059669' }}>{t('مُفرَج')}: {fmt(o.released_amount)}</p>
+                          <p className="text-[11px] text-slate-400">🛡️ {t('مضمون في الضمان')}: {fmt(held)} · {o.stage_done}/{o.stage_total}</p>
+                        </>
+                      )}
                     </div>
                     <ChevronDown size={16} className="text-slate-400" style={{ transform: expanded === o.id ? 'rotate(180deg)' : 'none' }} />
                   </div>
 
                   {expanded === o.id && (
                     <div className="border-t p-4 space-y-2" style={{ borderColor: '#F1F5F9' }}>
+                      {/* تمويل أمر التصنيع */}
+                      {(isBuyer || isAdmin) && o.status !== 'pending_match' && (
+                        o.financing_request_id
+                          ? <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#059669' }}><CheckCircle size={13} /> {t('تم تقديم طلب تمويل لهذا الأمر')}</span>
+                          : <button onClick={() => financeOrder(o.id)} disabled={busy === 'fin' + o.id} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}><Banknote size={13} /> {t('طلب تمويل هذا الأمر')}</button>
+                      )}
+
+                      {/* عرض المصنع (سوق التصنيع) */}
+                      {isFactory && o.status === 'pending_match' && (
+                        <div className="bg-[#F8FAFC] rounded-xl p-3 space-y-2">
+                          <p className="text-xs font-bold text-slate-600">{o.my_offer ? t('عرضك الحالي (يمكنك تحديثه)') : t('قدّم عرضك لهذا الطلب')}</p>
+                          {o.my_offer && <p className="text-[11px] text-slate-500">{t('السعر')}: {fmt(o.my_offer.offered_price)} · {t('مهلة')}: {o.my_offer.lead_days || '-'} {t('يوم')} · <span style={{ color: o.my_offer.status === 'accepted' ? '#059669' : o.my_offer.status === 'rejected' ? '#DC2626' : '#4F46E5' }}>{t(o.my_offer.status === 'accepted' ? 'مقبول' : o.my_offer.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة')}</span></p>}
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="number" placeholder={t('سعرك للطلب')} className={inp} style={{ borderColor: '#E5E7EF' }} value={offerForm[o.id]?.offered_price || ''} onChange={e => setOfferForm(x => ({ ...x, [o.id]: { ...x[o.id], offered_price: e.target.value } }))} />
+                            <input type="number" placeholder={t('مهلة التنفيذ (يوم)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={offerForm[o.id]?.lead_days || ''} onChange={e => setOfferForm(x => ({ ...x, [o.id]: { ...x[o.id], lead_days: e.target.value } }))} />
+                          </div>
+                          <input placeholder={t('ملاحظة (اختياري)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={offerForm[o.id]?.note || ''} onChange={e => setOfferForm(x => ({ ...x, [o.id]: { ...x[o.id], note: e.target.value } }))} />
+                          <button onClick={() => submitOffer(o.id)} disabled={busy === 'offer' + o.id} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#4F46E5' }}><Send size={14} /> {o.my_offer ? t('تحديث العرض') : t('إرسال العرض')}</button>
+                        </div>
+                      )}
+
+                      {/* عروض المصانع للمشتري/الأونر */}
+                      {(isBuyer || isAdmin) && o.status === 'pending_match' && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-bold text-slate-600">{t('عروض المصانع')} ({(offers[o.id] || []).length})</p>
+                          {(offers[o.id] || []).length === 0 && <p className="text-xs text-slate-400">{t('لا توجد عروض بعد — الطلب معروض على جميع المصانع.')}</p>}
+                          {(offers[o.id] || []).map((of, idx) => (
+                            <div key={of.id} className="flex items-center gap-2 border rounded-xl p-2 text-xs" style={{ borderColor: idx === 0 ? '#059669' : '#E5E7EF', background: idx === 0 ? '#ECFDF5' : '#FFFFFF' }}>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-bold text-slate-700 truncate">{of.factory_name || of.factory_person} {idx === 0 && <span style={{ color: '#059669' }}>· {t('الأقل سعرًا')}</span>}</p>
+                                <p className="text-[11px] text-slate-400">{t('السعر')}: {fmt(of.offered_price)} · {t('مهلة')}: {of.lead_days || '-'} {t('يوم')} · ★ {Number(of.factory_rating)}</p>
+                                {of.note && <p className="text-[11px] text-slate-400 truncate">{of.note}</p>}
+                              </div>
+                              <button onClick={() => acceptOffer(of.id, o.id)} disabled={busy === of.id} className="px-3 py-1.5 rounded-lg text-white font-bold flex-shrink-0" style={{ background: '#059669' }}>{t('قبول')}</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {isAdmin && o.status === 'pending_match' && (
                        <div className="space-y-2">
                         <button onClick={()=>loadSugg(o.id)} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{background:'#EEF2FF',color:'#4F46E5'}}><Sparkles size={13}/> {t('🤖 اقتراح ذكي للمصنع')}</button>
@@ -184,9 +251,10 @@ export default function Manufacturing() {
               <input type="number" placeholder={t('اتركه فارغًا لاستخدام السعر التقديري')} className={inp} style={{ borderColor: '#E5E7EF' }} value={form.total_amount} onChange={e => setForm({ ...form, total_amount: e.target.value })} />
             </div>
             <select className={inp} style={{ borderColor: '#E5E7EF' }} value={form.factory_id} onChange={e => setForm({ ...form, factory_id: e.target.value })}>
-              <option value="">{t('اختر المصنع (اختياري — وإلا تطابقه المنصة)')}</option>
+              <option value="">{t('اتركه فارغًا لعرض الطلب على المصانع لتقديم عروضها')}</option>
               {factories.map(fc => <option key={fc.id} value={fc.id}>{fc.company_name || fc.name}</option>)}
             </select>
+            <p className="text-[11px] text-slate-400 -mt-1">{t('عند تركه فارغًا، يظهر الطلب لكل المصانع لتنافس بعروضها ثم تختار الأنسب.')}</p>
             {est && (
               <div className="rounded-xl p-3 text-xs" style={{ background:'#EEF2FF', color:'#3730A3' }}>
                 <div className="flex items-center gap-1 font-bold mb-1"><Sparkles size={13}/> {t('السعر المعياري التقديري')}</div>
