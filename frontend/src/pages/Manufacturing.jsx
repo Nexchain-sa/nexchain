@@ -48,6 +48,10 @@ export default function Manufacturing() {
   const [facFilter, setFacFilter] = useState('all');
   const [reviewFor, setReviewFor] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [disputeFor, setDisputeFor] = useState(null);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputes, setDisputes] = useState({});
+  const [partial, setPartial] = useState({});
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); if (isAdmin || isBuyer) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
@@ -59,6 +63,7 @@ export default function Manufacturing() {
     setExpanded(o.id);
     const r = await mfgAPI.stages(o.id); setStages(r.data.data || []);
     if ((isBuyer || isAdmin) && o.status === 'pending_match') loadOffers(o.id);
+    if (isAdmin || o.open_disputes > 0) loadDisputes(o.id);
   };
   const reloadStages = async (oid) => { const r = await mfgAPI.stages(oid); setStages(r.data.data || []); load(); };
 
@@ -82,6 +87,19 @@ export default function Manufacturing() {
   const submitReview = async () => {
     setBusy('review');
     try { const r = await mfgAPI.review(reviewFor.id, reviewForm); toast.success(r.data.message); setReviewFor(null); setReviewForm({ rating: 5, comment: '' }); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const loadDisputes = async (oid) => { try { const r = await mfgAPI.disputes(oid); setDisputes(x => ({ ...x, [oid]: r.data.data || [] })); } catch {} };
+  const raiseDispute = async () => {
+    if (!disputeReason.trim()) return toast.error(t('اذكر سبب النزاع'));
+    setBusy('dispute');
+    try { const r = await mfgAPI.raiseDispute(disputeFor.order.id, { stage_id: disputeFor.stageId || undefined, reason: disputeReason }); toast.success(r.data.message); setDisputeFor(null); setDisputeReason(''); loadDisputes(disputeFor.order.id); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const resolveDispute = async (did, oid, resolution) => {
+    setBusy(did);
+    const amount = resolution === 'partial' ? Number(partial[did] || 0) : undefined;
+    try { const r = await mfgAPI.resolveDispute(did, { resolution, amount, note: '' }); toast.success(r.data.message); loadDisputes(oid); load(); }
     catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
   };
 
@@ -161,6 +179,7 @@ export default function Manufacturing() {
                       <p className="text-xs text-slate-400 mt-0.5">{o.customer_name || '-'} {o.factory_name ? `← ${o.factory_name}` : ''}</p>
                     </div>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: os.bg, color: os.color }}>{t(os.label)}</span>
+                    {o.open_disputes > 0 && <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠️ {t('نزاع')}</span>}
                     <div className="text-left">
                       {o.status === 'pending_match' ? (
                         <p className="text-sm font-bold" style={{ color: '#D97706' }}>{o.offer_count || 0} {t('عرض')}</p>
@@ -262,6 +281,7 @@ export default function Manufacturing() {
                             {isFactory && o.status === 'in_production' && s.status === 'pending' && <button onClick={() => progress(s.id, 'in_progress', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#EEF2FF', color: '#4F46E5' }}>{t('بدء')}</button>}
                             {isFactory && s.status === 'in_progress' && <button onClick={() => progress(s.id, 'qa_review', o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>{t('تم الإنجاز (للفحص)')}</button>}
                             {(isBuyer || isAdmin) && isReceipt && s.status === 'qa_review' && <button onClick={() => receive(s.id, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1" style={{ background: '#ECFDF5', color: '#059669' }}><CheckCircle size={12}/> {t('تأكيد الاستلام السليم')}</button>}
+                            {isBuyer && s.status === 'qa_review' && o.open_disputes === 0 && <button onClick={() => { setDisputeFor({ order: o, stageId: s.id }); setDisputeReason(''); }} className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: '#FEE2E2', color: '#DC2626' }}>⚠️ {t('نزاع')}</button>}
                             {isAdmin && !isReceipt && s.status === 'qa_review' && (
                               <div className="flex gap-1">
                                 <button onClick={() => qa(s.id, true, o.id)} disabled={busy === s.id} className="text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1" style={{ background: '#ECFDF5', color: '#059669' }}><CheckCircle size={12} /> {t('اعتماد')}</button>
@@ -271,6 +291,32 @@ export default function Manufacturing() {
                           </div>
                         );
                       })}
+
+                      {/* النزاعات والتحكيم */}
+                      {(disputes[o.id] || []).map(d => (
+                        <div key={d.id} className="border rounded-xl p-3 space-y-2" style={{ borderColor: d.status === 'open' ? '#FCA5A5' : '#E5E7EF', background: d.status === 'open' ? '#FEF2F2' : '#F8FAFC' }}>
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="text-xs font-bold" style={{ color: d.status === 'open' ? '#DC2626' : '#059669' }}>
+                              {d.status === 'open' ? `⚠️ ${t('نزاع مفتوح')}` : `⚖️ ${t('تم الحسم')}`}{d.stage_name ? ` · ${t(d.stage_name)}` : ''}
+                            </span>
+                            <span className="text-[11px] text-slate-400">{t('من')}: {d.raised_name || '-'}</span>
+                          </div>
+                          <p className="text-xs text-slate-600">{d.reason}</p>
+                          {d.status === 'resolved' && (
+                            <p className="text-[11px] font-bold" style={{ color: '#0F766E' }}>
+                              {t('القرار')}: {t(d.resolution === 'release' ? 'إفراج للمصنع' : d.resolution === 'refund' ? 'استرداد للمشتري' : 'إفراج جزئي')}{d.amount ? ` · ${fmt(d.amount)}` : ''}
+                            </p>
+                          )}
+                          {isAdmin && d.status === 'open' && (
+                            <div className="flex items-center gap-2 flex-wrap pt-1">
+                              <button onClick={() => resolveDispute(d.id, o.id, 'release')} disabled={busy === d.id} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#ECFDF5', color: '#059669' }}>{t('إفراج للمصنع')}</button>
+                              <button onClick={() => resolveDispute(d.id, o.id, 'refund')} disabled={busy === d.id} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEE2E2', color: '#DC2626' }}>{t('استرداد للمشتري')}</button>
+                              <input type="number" placeholder={t('مبلغ جزئي')} value={partial[d.id] || ''} onChange={e => setPartial(x => ({ ...x, [d.id]: e.target.value }))} className="w-28 rounded-lg px-2 py-1.5 text-xs border" style={{ borderColor: '#E5E7EF' }} />
+                              <button onClick={() => resolveDispute(d.id, o.id, 'partial')} disabled={busy === d.id} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>{t('إفراج جزئي')}</button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -317,6 +363,23 @@ export default function Manufacturing() {
               <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {disputeFor && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir={dir} onClick={() => setDisputeFor(null)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div>
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">⚠️ {t('فتح نزاع')}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{disputeFor.order.order_number} · {disputeFor.order.factory_name || ''}</p>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">{t('سيُجمَّد الإفراج عن الدفعة ويتولّى فريق المنصة التحكيم بين الطرفين.')}</p>
+            <textarea rows={4} placeholder={t('صف المشكلة (عيب في الجودة، تأخّر، مخالفة للمواصفات...)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
+            <div className="flex gap-2">
+              <button onClick={raiseDispute} disabled={busy === 'dispute'} className="flex-1 py-2.5 rounded-xl text-white font-bold" style={{ background: '#DC2626' }}>{busy === 'dispute' ? t('جارٍ...') : t('فتح النزاع')}</button>
+              <button onClick={() => setDisputeFor(null)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>
+            </div>
+          </div>
         </div>
       )}
 

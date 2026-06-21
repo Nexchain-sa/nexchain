@@ -320,6 +320,24 @@ const autoSetup = async () => {
         UNIQUE(order_id, factory_id)
       );
     `).catch(()=>{});
+    // النزاعات والتحكيم على أوامر التصنيع (يكمل ضمان الـescrow)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS disputes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_id UUID NOT NULL REFERENCES manufacturing_orders(id) ON DELETE CASCADE,
+        stage_id UUID REFERENCES production_stages(id) ON DELETE SET NULL,
+        raised_by UUID NOT NULL REFERENCES users(id),
+        against_id UUID REFERENCES users(id),
+        reason TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','resolved')),
+        resolution VARCHAR(20) CHECK (resolution IN ('release','refund','partial')),
+        resolution_note TEXT,
+        amount NUMERIC(15,2),
+        resolved_by UUID REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT NOW(),
+        resolved_at TIMESTAMP
+      );
+    `).catch(()=>{});
     // التقييمات والمراجعات (سمعة المصانع/الموردين)
     await client.query(`
       CREATE TABLE IF NOT EXISTS reviews (

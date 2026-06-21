@@ -136,7 +136,8 @@ exports.listOrders = async (req, res) => {
         (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id AND s.status='passed') AS stage_done,
         (SELECT COUNT(*)::int FROM manufacturing_offers mo WHERE mo.order_id=o.id) AS offer_count,
         (SELECT row_to_json(x) FROM (SELECT offered_price, lead_days, status FROM manufacturing_offers WHERE order_id=o.id AND factory_id=$1) x) AS my_offer,
-        (SELECT row_to_json(rv) FROM (SELECT rating, comment FROM reviews WHERE target_type='mfg_order' AND target_id=o.id AND author_id=$1) rv) AS my_review
+        (SELECT row_to_json(rv) FROM (SELECT rating, comment FROM reviews WHERE target_type='mfg_order' AND target_id=o.id AND author_id=$1) rv) AS my_review,
+        (SELECT COUNT(*)::int FROM disputes dz WHERE dz.order_id=o.id AND dz.status='open') AS open_disputes
       FROM manufacturing_orders o
       LEFT JOIN users c ON c.id=o.customer_id
       LEFT JOIN users f ON f.id=o.factory_id
@@ -317,6 +318,87 @@ exports.stageReceive = async (req, res) => {
     if (rem[0].n === 0) await client.query(`UPDATE manufacturing_orders SET status='completed' WHERE id=$1`, [stage.order_id]);
     await client.query('COMMIT');
     res.json({ success: true, message: 'تم تأكيد الاستلام والإفراج عن الدفعة الأخيرة' });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
+};
+
+// ── النزاعات والتحكيم ─────────────────────────────────────────
+exports.raiseDispute = async (req, res) => {
+  try {
+    const reason = (req.body.reason || '').trim();
+    const stage_id = req.body.stage_id || null;
+    if (!reason) return res.status(400).json({ success: false, message: 'يرجى ذكر سبب النزاع' });
+    const { rows: ord } = await pool.query(`SELECT * FROM manufacturing_orders WHERE id=$1`, [req.params.id]);
+    if (!ord.length) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    const order = ord[0];
+    const isAdmin = ['admin', 'owner'].includes(req.user.role);
+    if (!isAdmin && order.customer_id !== req.user.id) return res.status(403).json({ success: false, message: 'ليس طلبك' });
+    const { rows: ex } = await pool.query(`SELECT id FROM disputes WHERE order_id=$1 AND status='open'`, [order.id]);
+    if (ex.length) return res.status(409).json({ success: false, message: 'يوجد نزاع مفتوح بالفعل على هذا الطلب' });
+    const { rows } = await pool.query(
+      `INSERT INTO disputes(order_id,stage_id,raised_by,against_id,reason) VALUES($1,$2,$3,$4,$5) RETURNING *`,
+      [order.id, stage_id, req.user.id, order.factory_id, reason]);
+    // إشعار المصنع + كل المدراء/المُلّاك
+    if (order.factory_id) pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link) VALUES($1,'dispute','نزاع على طلبك ⚠️',$2,'/manufacturing')`,
+      [order.factory_id, `فُتح نزاع على طلب ${order.order_number} — بانتظار تحكيم المنصة`]).catch(() => {});
+    pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link) SELECT id,'dispute','نزاع جديد للتحكيم ⚠️',$1,'/manufacturing' FROM users WHERE role IN ('admin','owner')`,
+      [`نزاع على طلب ${order.order_number} يحتاج حسمًا`]).catch(() => {});
+    res.status(201).json({ success: true, data: rows[0], message: 'تم فتح النزاع — سيراجعه فريق المنصة' });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.getDisputes = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT d.*, rb.company_name AS raised_name, ag.company_name AS against_name, s.name AS stage_name
+      FROM disputes d
+      LEFT JOIN users rb ON rb.id=d.raised_by
+      LEFT JOIN users ag ON ag.id=d.against_id
+      LEFT JOIN production_stages s ON s.id=d.stage_id
+      WHERE d.order_id=$1 ORDER BY d.created_at DESC`, [req.params.id]);
+    res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
+exports.resolveDispute = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { resolution, note } = req.body;
+    if (!['release', 'refund', 'partial'].includes(resolution)) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'قرار غير صالح' }); }
+    const { rows: dd } = await client.query(
+      `SELECT d.*, o.total_amount, o.factory_id, o.customer_id, o.order_number FROM disputes d JOIN manufacturing_orders o ON o.id=d.order_id WHERE d.id=$1`, [req.params.id]);
+    if (!dd.length) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: 'النزاع غير موجود' }); }
+    const d = dd[0];
+    if (d.status !== 'open') { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'النزاع محسوم بالفعل' }); }
+    let releaseAmt = 0;
+    if (resolution === 'release' && d.stage_id) {
+      const { rows: st } = await client.query(`SELECT * FROM production_stages WHERE id=$1`, [d.stage_id]);
+      if (st.length) {
+        releaseAmt = Math.round(Number(d.total_amount) * Number(st[0].payment_pct)) / 100;
+        await client.query(`UPDATE production_stages SET status='passed', released=true, updated_at=NOW() WHERE id=$1`, [d.stage_id]);
+        await client.query(`UPDATE manufacturing_orders SET released_amount=released_amount+$1 WHERE id=$2`, [releaseAmt, d.order_id]);
+      }
+    } else if (resolution === 'refund' && d.stage_id) {
+      await client.query(`UPDATE production_stages SET status='failed', released=false, updated_at=NOW() WHERE id=$1`, [d.stage_id]);
+    } else if (resolution === 'partial') {
+      releaseAmt = Math.max(0, Number(req.body.amount) || 0);
+      if (releaseAmt > 0) await client.query(`UPDATE manufacturing_orders SET released_amount=released_amount+$1 WHERE id=$2`, [releaseAmt, d.order_id]);
+      if (d.stage_id) await client.query(`UPDATE production_stages SET status='passed', released=true, updated_at=NOW() WHERE id=$1`, [d.stage_id]);
+    }
+    const { rows: rem } = await client.query(`SELECT COUNT(*)::int AS n FROM production_stages WHERE order_id=$1 AND status!='passed'`, [d.order_id]);
+    if (rem[0].n === 0) await client.query(`UPDATE manufacturing_orders SET status='completed' WHERE id=$1`, [d.order_id]);
+    await client.query(
+      `UPDATE disputes SET status='resolved', resolution=$1, resolution_note=$2, amount=$3, resolved_by=$4, resolved_at=NOW() WHERE id=$5`,
+      [resolution, note || null, releaseAmt || null, req.user.id, d.id]);
+    await client.query('COMMIT');
+    const label = resolution === 'release' ? 'الإفراج عن الدفعة للمصنع' : resolution === 'refund' ? 'رفض الدفعة لصالح المشتري' : `إفراج جزئي (${releaseAmt})`;
+    [d.customer_id, d.factory_id].filter(Boolean).forEach(uid => pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link) VALUES($1,'dispute','تم حسم النزاع ⚖️',$2,'/manufacturing')`,
+      [uid, `قرار التحكيم على طلب ${d.order_number}: ${label}`]).catch(() => {}));
+    res.json({ success: true, message: 'تم حسم النزاع' });
   } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
   finally { client.release(); }
 };
