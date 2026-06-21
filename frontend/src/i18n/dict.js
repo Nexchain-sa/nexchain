@@ -598,4 +598,6 @@ export const DICT = {
   'تقييمي': "My rating",
   'مراكز نشطة': "Active positions",
   'الاتجاه الشهري — الفواتير والتصنيع': "Monthly trend — invoices & manufacturing",
+  'سداد مبكر': "Early settlement",
+  'سداد كل أقساط هذه الصفقة دفعةً واحدة مع الإعفاء من الغرامات؟': "Settle all installments of this deal at once with late-fee waiver?",
 };

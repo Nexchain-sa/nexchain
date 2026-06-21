@@ -60,6 +60,13 @@ export default function Installments() {
     catch (e) { toast.error(e.response?.data?.message || t('خطأ')); }
     finally { setBusy(null); }
   };
+  const settleEarly = async (reqId) => {
+    if (!window.confirm(t('سداد كل أقساط هذه الصفقة دفعةً واحدة مع الإعفاء من الغرامات؟'))) return;
+    setBusy('settle' + reqId);
+    try { const r = await installmentAPI.settleEarly(reqId, {}); toast.success(r.data.message); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); }
+    finally { setBusy(null); }
+  };
 
   const totalDue   = rows.filter(r => ['due', 'overdue', 'pending_review'].includes(r.status))
                          .reduce((s, r) => s + Number(r.amount) + Number(r.late_fee || 0), 0);
@@ -150,11 +157,20 @@ export default function Installments() {
                     </td>
                     <td className="px-4 py-3">
                       {!isAdmin && (r.status === 'due' || r.status === 'overdue') && (
-                        <button onClick={() => openPay(r)} disabled={busy === r.id}
-                          className="px-3 py-1.5 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
-                          style={{ background: '#4F46E5' }}>
-                          {busy === r.id ? '...' : t('تأكيد السداد')}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => openPay(r)} disabled={busy === r.id}
+                            className="px-3 py-1.5 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                            style={{ background: '#4F46E5' }}>
+                            {busy === r.id ? '...' : t('تأكيد السداد')}
+                          </button>
+                          {r.financing_request_id && (
+                            <button onClick={() => settleEarly(r.financing_request_id)} disabled={busy === 'settle' + r.financing_request_id}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold border hover:bg-emerald-50 disabled:opacity-50"
+                              style={{ borderColor: '#A7F3D0', color: '#059669' }}>
+                              {t('سداد مبكر')}
+                            </button>
+                          )}
+                        </div>
                       )}
                       {!isAdmin && r.status === 'pending_review' && <span className="text-xs text-amber-600">{t('بانتظار المراجعة')}</span>}
                       {isAdmin && r.status === 'pending_review' && (

@@ -400,6 +400,41 @@ exports.confirmInstallment = async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
 
+// السداد المبكر: تسوية كل الأقساط المتبقية لصفقة دفعةً واحدة مع إعفاء من الغرامات المتراكمة
+exports.settleEarly = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const reqId = req.params.request_id;
+    const rc = req.body.receipt || {};
+    const isAdmin = ['admin', 'owner'].includes(req.user.role);
+    const { rows: insts } = await client.query(
+      `SELECT id, payer_id, amount, late_fee FROM installments WHERE financing_request_id=$1 AND status IN ('due','overdue')`, [reqId]);
+    if (!insts.length) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'لا توجد أقساط مستحقة لهذه الصفقة' }); }
+    if (!isAdmin && insts.some(i => i.payer_id !== req.user.id)) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: 'ليست صفقتك' }); }
+    const waived = insts.reduce((a, i) => a + Number(i.late_fee || 0), 0);
+    const principal = insts.reduce((a, i) => a + Number(i.amount || 0), 0);
+    // إعفاء الغرامات + تحويل للمراجعة بدفعة واحدة
+    await client.query(
+      `UPDATE installments SET status='pending_review', late_fee=0, receipt_url=$2, receipt_name=$3
+       WHERE financing_request_id=$1 AND status IN ('due','overdue')`,
+      [reqId, rc.url || null, rc.name || null]);
+    await client.query('COMMIT');
+    res.json({ success: true, message: `تم تقديم سداد مبكر لـ ${insts.length} قسط — أُعفيت غرامات بقيمة ${waived}`, data: { count: insts.length, principal, waived } });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
+};
+
+// اعتماد السداد المبكر (الأونر/المدير) — تأكيد كل أقساط الصفقة قيد المراجعة دفعةً واحدة
+exports.confirmSettlement = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `UPDATE installments SET status='paid', paid_at=NOW() WHERE financing_request_id=$1 AND status='pending_review' RETURNING id`,
+      [req.params.request_id]);
+    res.json({ success: true, message: `تم اعتماد سداد ${rows.length} قسط`, data: { count: rows.length } });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
 
 exports.fundByPlatform = async (req, res) => {
   const client = await pool.connect();

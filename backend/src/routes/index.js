@@ -89,6 +89,8 @@ router.post('/competitions/:competition_id/bid',      auth, requireRole('supplie
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 router.get('/dashboard/stats',   auth, mainC.dashboardStats);
+router.post('/installments/settle/:request_id',        auth, requireRole('buyer','admin','owner'), mainC.settleEarly);
+router.put ('/installments/settle/:request_id/confirm', auth, requireRole('admin','owner'), mainC.confirmSettlement);
 router.get('/wallet/ledger',     auth, walletC.ledger);
 router.get('/notifications',     auth, mainC.getNotifications);
 router.put('/notifications/read',auth, mainC.markRead);

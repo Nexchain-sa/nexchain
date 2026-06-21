@@ -96,6 +96,8 @@ export const installmentAPI = {
   list:    ()   => API.get('/installments'),
   pay:     (id, data) => API.post(`/installments/${id}/pay`, data),
   confirm: (id) => API.put(`/installments/${id}/confirm`),
+  settleEarly: (reqId, data) => API.post(`/installments/settle/${reqId}`, data),
+  confirmSettlement: (reqId) => API.put(`/installments/settle/${reqId}/confirm`),
 };
 
 export const dealAPI = { list: () => API.get('/deals') };
