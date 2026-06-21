@@ -23,6 +23,7 @@ import Impact      from './pages/Impact';
 import Portfolio   from './pages/Portfolio';
 import Secondary   from './pages/Secondary';
 import Wallet      from './pages/Wallet';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AdminPanel from './pages/AdminPanel';
 import Profile    from './pages/Profile';
 import Layout     from './components/Layout';
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="secondary"    element={<Secondary />} />
           <Route path="wallet"       element={<Wallet />} />
           <Route path="profile"      element={<Profile />} />
+          <Route path="analytics"    element={<ProtectedRoute roles={['admin','owner']}><AnalyticsDashboard /></ProtectedRoute>} />
           <Route path="admin"        element={<ProtectedRoute roles={['admin','owner']}><AdminPanel /></ProtectedRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -35,6 +35,61 @@ exports.impact = async (req, res) => {
 };
 
 
+// لوحة تحليلات الأونر — مع فلتر مدى زمني (from/to)
+exports.dashboard = async (req, res) => {
+  try {
+    const to = req.query.to ? new Date(req.query.to) : new Date();
+    const from = req.query.from ? new Date(req.query.from) : new Date(Date.now() - 90 * 864e5);
+    if (isNaN(from) || isNaN(to)) return res.status(400).json({ success: false, message: 'مدى تاريخ غير صالح' });
+    const P = [from.toISOString(), to.toISOString()];
+    const q = (sql) => pool.query(sql, P).then(r => r.rows).catch(() => []);
+
+    const [inv] = await q(`SELECT COALESCE(SUM(amount),0)::float v, COUNT(*)::int n FROM invoices WHERE created_at BETWEEN $1 AND $2`);
+    const [mfg] = await q(`SELECT COALESCE(SUM(total_amount),0)::float v, COALESCE(SUM(released_amount),0)::float rel, COUNT(*)::int n FROM manufacturing_orders WHERE created_at BETWEEN $1 AND $2`);
+    const [fund] = await q(`SELECT COALESCE(SUM(requested_amount),0)::float v, COUNT(*)::int n, COUNT(DISTINCT requester_id)::int smes FROM financing_requests WHERE status='funded' AND created_at BETWEEN $1 AND $2`);
+    const [inst] = await q(`SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='paid')::int paid FROM installments WHERE created_at BETWEEN $1 AND $2`);
+    const [stg] = await q(`SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='passed')::int passed FROM production_stages WHERE updated_at BETWEEN $1 AND $2`);
+    const [usr] = await q(`SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE role='buyer')::int buyers, COUNT(*) FILTER (WHERE role='supplier')::int suppliers FROM users WHERE created_at BETWEEN $1 AND $2`);
+    const [disp] = await q(`SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='open')::int open, COUNT(*) FILTER (WHERE status='resolved')::int resolved FROM disputes WHERE created_at BETWEEN $1 AND $2`);
+    const [rate] = await q(`SELECT COALESCE(ROUND(AVG(rating)::numeric,2),0)::float avg, COUNT(*)::int n FROM reviews WHERE created_at BETWEEN $1 AND $2`);
+
+    const monthly = await q(`
+      WITH months AS (
+        SELECT generate_series(date_trunc('month',$1::timestamp), date_trunc('month',$2::timestamp), interval '1 month') m
+      )
+      SELECT to_char(m,'Mon YY') AS label,
+        COALESCE((SELECT SUM(amount) FROM invoices i WHERE date_trunc('month',i.created_at)=months.m),0)::float AS invoices,
+        COALESCE((SELECT SUM(total_amount) FROM manufacturing_orders o WHERE date_trunc('month',o.created_at)=months.m),0)::float AS manufacturing,
+        COALESCE((SELECT SUM(requested_amount) FROM financing_requests fr WHERE fr.status='funded' AND date_trunc('month',fr.created_at)=months.m),0)::float AS financing
+      FROM months ORDER BY m`);
+    const financing_modes = await q(`SELECT COALESCE(financing_mode,'conventional') AS mode, COUNT(*)::int n, COALESCE(SUM(requested_amount),0)::float v FROM financing_requests WHERE status='funded' AND created_at BETWEEN $1 AND $2 GROUP BY 1`);
+    const order_status = await q(`SELECT status, COUNT(*)::int n FROM manufacturing_orders WHERE created_at BETWEEN $1 AND $2 GROUP BY status`);
+    const top_factories = await q(`
+      SELECT f.company_name AS name, COALESCE(f.rating,0)::float rating, COALESCE(f.rating_count,0)::int reviews,
+             COUNT(o.id)::int orders, COALESCE(SUM(o.total_amount),0)::float value, COALESCE(SUM(o.released_amount),0)::float released
+      FROM manufacturing_orders o JOIN users f ON f.id=o.factory_id
+      WHERE o.created_at BETWEEN $1 AND $2
+      GROUP BY f.id, f.company_name, f.rating, f.rating_count
+      ORDER BY value DESC LIMIT 6`);
+    const categories = await q(`SELECT COALESCE(category,'other') AS category, COUNT(*)::int n, COALESCE(SUM(total_amount),0)::float v FROM manufacturing_orders WHERE created_at BETWEEN $1 AND $2 GROUP BY 1 ORDER BY v DESC`);
+
+    const gmv = inv.v + mfg.v;
+    res.json({ success: true, data: {
+      range: { from: P[0], to: P[1] },
+      kpi: {
+        gmv, invoices_value: inv.v, invoices_n: inv.n, financed_total: fund.v, financings_n: fund.n, smes: fund.smes,
+        mfg_orders: mfg.n, mfg_value: mfg.v, mfg_released: mfg.rel,
+        new_users: usr.total, new_buyers: usr.buyers, new_suppliers: usr.suppliers,
+        repayment_rate: inst.total ? Math.round(inst.paid * 100 / inst.total) : 0,
+        qa_pass_rate: stg.total ? Math.round(stg.passed * 100 / stg.total) : 0,
+        disputes_open: disp.open, disputes_resolved: disp.resolved, disputes_total: disp.total,
+        avg_rating: rate.avg, reviews_n: rate.n,
+      },
+      monthly, financing_modes, order_status, top_factories, categories,
+    }});
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
 exports.portfolio = async (req, res) => {
   try {
     const { rows } = await pool.query(`

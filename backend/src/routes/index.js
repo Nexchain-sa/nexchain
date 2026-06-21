@@ -71,6 +71,7 @@ router.post('/manufacturing/orders/:id/disputes',    auth, requireRole('buyer','
 router.get ('/manufacturing/orders/:id/disputes',    auth, mfgC.getDisputes);
 router.put ('/manufacturing/disputes/:id/resolve',   auth, requireRole('admin','owner'), mfgC.resolveDispute);
 router.get ('/impact', auth, requireRole('admin','owner','investor'), anC.impact);
+router.get ('/analytics/dashboard', auth, requireRole('admin','owner'), anC.dashboard);
 router.get ('/financing/portfolio', auth, requireRole('investor','admin','owner'), anC.portfolio);
 router.get ('/financing/auto-invest', auth, requireRole('investor','admin','owner'), mainC.getAutoInvest);
 router.put ('/financing/auto-invest', auth, requireRole('investor','admin','owner'), mainC.setAutoInvest);

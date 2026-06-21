@@ -8,7 +8,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity, Briefcase, Wallet
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity, Briefcase, Wallet, BarChart3
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -47,6 +47,7 @@ const navItems = {
   ],
   admin: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/analytics',    icon:BarChart3,        label:'لوحة التحليلات' },
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },
@@ -63,6 +64,7 @@ const navItems = {
   ],
   owner: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
+    { to:'/analytics',    icon:BarChart3,        label:'لوحة التحليلات' },
     { to:'/deals',        icon:Workflow,         label:'الصفقات' },
     { to:'/rfqs',         icon:FileText,        label:'الطلبات' },
     { to:'/competitions', icon:Trophy,           label:'المنافسات' },

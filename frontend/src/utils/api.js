@@ -121,7 +121,10 @@ export const mfgAPI = {
   resolveDispute: (did,data) => API.put(`/manufacturing/disputes/${did}/resolve`, data),
 };
 
-export const analyticsAPI = { impact: () => API.get('/impact') };
+export const analyticsAPI = {
+  impact: () => API.get('/impact'),
+  dashboard: (params) => API.get('/analytics/dashboard', { params }),
+};
 
 export const walletAPI = { ledger: () => API.get('/wallet/ledger') };
 
