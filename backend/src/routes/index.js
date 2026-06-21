@@ -4,6 +4,7 @@ const { auth, requireRole } = require('../middleware/auth');
 const mfgC = require('../controllers/manufacturingController');
 const anC = require('../controllers/analyticsController');
 const secC = require('../controllers/secondaryController');
+const walletC = require('../controllers/walletController');
 const authC = require('../controllers/authController');
 const rfqC  = require('../controllers/rfqController');
 const mainC = require('../controllers/mainController');
@@ -87,6 +88,7 @@ router.post('/competitions/:competition_id/bid',      auth, requireRole('supplie
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 router.get('/dashboard/stats',   auth, mainC.dashboardStats);
+router.get('/wallet/ledger',     auth, walletC.ledger);
 router.get('/notifications',     auth, mainC.getNotifications);
 router.put('/notifications/read',auth, mainC.markRead);
 

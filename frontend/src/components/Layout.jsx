@@ -8,7 +8,7 @@ import { useCurrency } from '../context/CurrencyContext';
 import {
   LayoutDashboard, FileText, Trophy, Banknote, Receipt,
   Users, Bell, User, LogOut, Menu, X, Crown, ShieldCheck,
-  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity, Briefcase
+  Repeat, ChevronDown, Check, ShoppingCart, Store, TrendingUp, CreditCard, Workflow, Clock, Globe, FileSignature, Factory, Activity, Briefcase, Wallet
 } from 'lucide-react';
 
 const switchRoleIcon = { buyer: ShoppingCart, supplier: Store, investor: TrendingUp, admin: ShieldCheck, owner: Crown };
@@ -24,6 +24,7 @@ const navItems = {
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/financing',    icon:Banknote,         label:'التمويل' },
     { to:'/agreements',   icon:FileSignature,    label:'العقود' },
+    { to:'/wallet',       icon:Wallet,           label:'المحفظة المالية' },
   ],
   supplier: [
     { to:'/dashboard',    icon:LayoutDashboard, label:'لوحة التحكم' },
@@ -33,12 +34,14 @@ const navItems = {
     { to:'/manufacturing',icon:Factory,         label:'التصنيع' },
     { to:'/invoices',     icon:Receipt,          label:'فواتيري' },
     { to:'/financing',    icon:Banknote,         label:'تمويل فواتيري' },
+    { to:'/wallet',       icon:Wallet,           label:'المحفظة المالية' },
   ],
   investor: [
     { to:'/dashboard',  icon:LayoutDashboard, label:'لوحة التحكم' },
     { to:'/financing',  icon:Banknote,        label:'فرص التمويل' },
     { to:'/portfolio',  icon:Briefcase,       label:'محفظتي' },
     { to:'/secondary',  icon:Repeat,          label:'السوق الثانوي' },
+    { to:'/wallet',     icon:Wallet,          label:'المحفظة المالية' },
     { to:'/agreements', icon:FileSignature,   label:'العقود' },
     { to:'/impact',     icon:Activity,        label:'الأثر' },
   ],
@@ -54,6 +57,7 @@ const navItems = {
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/portfolio',    icon:Briefcase,        label:'محفظتي' },
     { to:'/secondary',    icon:Repeat,           label:'السوق الثانوي' },
+    { to:'/wallet',       icon:Wallet,           label:'المحفظة المالية' },
     { to:'/impact',       icon:Activity,         label:'الأثر' },
     { to:'/admin',        icon:Users,            label:'إدارة المستخدمين' },
   ],
@@ -69,6 +73,7 @@ const navItems = {
     { to:'/installments', icon:CreditCard,       label:'الأقساط' },
     { to:'/portfolio',    icon:Briefcase,        label:'محفظتي' },
     { to:'/secondary',    icon:Repeat,           label:'السوق الثانوي' },
+    { to:'/wallet',       icon:Wallet,           label:'المحفظة المالية' },
     { to:'/impact',       icon:Activity,         label:'الأثر' },
     { to:'/admin',        icon:ShieldCheck,      label:'إدارة المنصة' },
   ],

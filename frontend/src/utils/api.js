@@ -123,6 +123,8 @@ export const mfgAPI = {
 
 export const analyticsAPI = { impact: () => API.get('/impact') };
 
+export const walletAPI = { ledger: () => API.get('/wallet/ledger') };
+
 export const secondaryAPI = {
   list:        ()        => API.get('/secondary/listings'),
   create:      (data)    => API.post('/secondary/listings', data),
