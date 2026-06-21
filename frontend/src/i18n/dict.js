@@ -592,4 +592,10 @@ export const DICT = {
   'المؤشرات': "Metrics",
   'المؤشر': "Metric",
   'الشهر': "Month",
+  'أوامر التصنيع': "Mfg orders",
+  'مبالغ مُفرَجة': "Released amounts",
+  'طلبات مفتوحة للعروض': "Open for offers",
+  'تقييمي': "My rating",
+  'مراكز نشطة': "Active positions",
+  'الاتجاه الشهري — الفواتير والتصنيع': "Monthly trend — invoices & manufacturing",
 };

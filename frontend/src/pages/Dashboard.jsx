@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { dashboardAPI, rfqAPI, competitionAPI } from '../utils/api';
+import { dashboardAPI, rfqAPI, competitionAPI, analyticsAPI } from '../utils/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Trophy, Banknote, TrendingUp, Package, Users, Plus, ArrowLeft } from 'lucide-react';
+import { FileText, Trophy, Banknote, TrendingUp, Package, Users, Plus, ArrowLeft, Factory, AlertTriangle, Briefcase } from 'lucide-react';
 
 const Card = ({ label, value, sub, color='blue', icon:Icon }) => {
   const { t } = useLang();
@@ -35,17 +35,7 @@ const Card = ({ label, value, sub, color='blue', icon:Icon }) => {
   );
 };
 
-const revenueData = [
-  {m:'يناير',rev:125000},{m:'فبراير',rev:180000},{m:'مارس',rev:220000},
-  {m:'أبريل',rev:195000},{m:'مايو',rev:310000},{m:'يونيو',rev:285000},
-  {m:'يوليو',rev:390000},
-];
-const pieData = [
-  {name:'عمولات',  value:35, color:'#4F46E5'},
-  {name:'اشتراكات',value:28, color:'#0D9488'},
-  {name:'تمويل',   value:25, color:'#059669'},
-  {name:'منافسات', value:12, color:'#D97706'},
-];
+const PIE_COLORS = ['#4F46E5', '#0D9488', '#059669', '#D97706', '#7C3AED', '#DC2626'];
 
 const CustomTooltip = ({active,payload,label}) => {
   if(!active||!payload?.length) return null;
@@ -64,12 +54,18 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [rfqs,  setRfqs]  = useState([]);
   const [comps, setComps] = useState([]);
+  const [ana,   setAna]   = useState(null);
+  const isMgmt = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
     dashboardAPI.stats().then(r => setStats(r.data.data)).catch(()=>{});
     rfqAPI.list({limit:5}).then(r => setRfqs(r.data.data || [])).catch(()=>{});
     competitionAPI.list({limit:4}).then(r => setComps(r.data.data || [])).catch(()=>{});
-  }, []);
+    if (isMgmt) analyticsAPI.dashboard().then(r => setAna(r.data.data)).catch(()=>{});
+  }, [isMgmt]);
+
+  const revenueData = (ana?.monthly || []).map(m => ({ m: m.label, rev: (m.invoices || 0) + (m.manufacturing || 0) }));
+  const pieData = (ana?.financing_modes || []).map((x, i) => ({ name: x.mode === 'shariah' ? '🌙 متوافق' : 'تقليدي', value: x.v, color: PIE_COLORS[i % PIE_COLORS.length] }));
 
   const roleLabel = {
     buyer:'مشترٍ', supplier:'مورد', investor:'مستثمر',
@@ -102,41 +98,47 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card label="إجمالي الطلبات"  value={stats.rfqs||0}        icon={FileText}   color="sky"    sub="طلب شراء"/>
           <Card label="قيمة المشتريات"  value={fmt(stats.orders_value||0)} icon={Package} color="green"/>
-          <Card label="الفواتير"         value={stats.invoices||0}    icon={Banknote}   color="blue"  sub="فاتورة"/>
+          <Card label="أوامر التصنيع"    value={stats.mfg_orders||0}  icon={Factory}    color="purple"/>
           <Card label="طلبات التمويل"    value={stats.financing||0}   icon={TrendingUp} color="amber"/>
+          {stats.open_disputes > 0 && <Card label="نزاعات مفتوحة" value={stats.open_disputes} icon={AlertTriangle} color="amber"/>}
         </div>
       )}
       {user?.role === 'supplier' && stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card label="عروض مقدّمة"     value={stats.quotes||0}      icon={FileText}   color="sky"/>
-          <Card label="عروض فائزة"      value={stats.won||0}          icon={Trophy}     color="green"/>
-          <Card label="معدل الفوز"       value={`${stats.win_rate||0}%`} icon={TrendingUp} color="blue"/>
-          <Card label="إجمالي المبيعات" value={fmt(stats.total_sales||0)} icon={Package} color="amber"/>
+          <Card label="معدل الفوز"       value={`${stats.win_rate||0}%`} icon={TrendingUp} color="green"/>
+          <Card label="أوامر التصنيع"    value={stats.factory_orders||0} icon={Factory} color="purple"/>
+          <Card label="مبالغ مُفرَجة"    value={fmt(stats.released||0)} icon={Banknote}  color="amber"/>
+          <Card label="طلبات مفتوحة للعروض" value={stats.open_market||0} icon={Trophy} color="blue"/>
+          <Card label="تقييمي"           value={`${stats.rating||0} ★`} icon={Package} color="green" sub={`${stats.rating_count||0} مراجعة`}/>
         </div>
       )}
       {(user?.role === 'admin' || user?.role === 'owner') && stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card label="إجمالي المستخدمين" value={stats.users||0}               icon={Users}     color="sky"/>
-          <Card label="طلبات الشراء"       value={stats.rfqs||0}                icon={FileText}  color="blue"/>
-          <Card label="المنافسات"           value={stats.competitions||0}        icon={Trophy}    color="green"/>
-          <Card label="طلبات تمويل"        value={stats.financing_requests||0}  icon={Banknote}  color="amber"/>
+          <Card label="إجمالي المستخدمين" value={stats.users||0}               icon={Users}     color="sky" sub={stats.pending_approvals?`${stats.pending_approvals} بانتظار الاعتماد`:undefined}/>
+          <Card label="إجمالي التداول GMV" value={fmt(stats.gmv||0)}           icon={TrendingUp} color="green"/>
+          <Card label="أوامر التصنيع"       value={stats.mfg_orders||0}          icon={Factory}   color="purple"/>
+          <Card label="حجم التمويل"         value={fmt(stats.financing_volume||0)} icon={Banknote} color="amber"/>
+          {stats.disputes_open > 0 && <Card label="نزاعات مفتوحة" value={stats.disputes_open} icon={AlertTriangle} color="amber"/>}
         </div>
       )}
-      {user?.role === 'investor' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card label="فرص تمويل متاحة"   value="12"      icon={Banknote}   color="sky"/>
-          <Card label="عائدي المتوقع"      value="15.4%"   icon={TrendingUp} color="green"/>
-          <Card label="محفظتي الاستثمارية" value="SAR 0"  icon={Package}    color="blue"/>
+      {user?.role === 'investor' && stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card label="مراكز نشطة"        value={stats.positions||0}   icon={Briefcase}  color="sky"/>
+          <Card label="إجمالي المستثمَر"   value={fmt(stats.invested||0)} icon={Banknote} color="blue"/>
+          <Card label="المحقَّق (مُحصّل)"   value={fmt(stats.realized||0)} icon={TrendingUp} color="green"/>
+          <Card label="معروض للبيع"        value={stats.listed||0}      icon={Package}    color="amber"/>
         </div>
       )}
 
-      {/* Charts row */}
+      {/* Charts row — management only (real analytics) */}
+      {isMgmt && revenueData.length > 0 && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200">
-          <h3 className="font-bold text-slate-800 mb-4">{t('نمو الإيرادات الشهرية (SAR)')}</h3>
+          <h3 className="font-bold text-slate-800 mb-4">{t('الاتجاه الشهري — الفواتير والتصنيع')}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={revenueData} barSize={28}>
-              <XAxis dataKey="m" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false}/>
+              <XAxis dataKey="m" tick={{fill:'#94A3B8',fontSize:11}} axisLine={false} tickLine={false} reversed={dir==='rtl'}/>
               <YAxis hide/>
               <Tooltip content={<CustomTooltip/>}/>
               <Bar dataKey="rev" fill="#4F46E5" radius={[6,6,0,0]}/>
@@ -144,13 +146,14 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-slate-200">
-          <h3 className="font-bold text-slate-800 mb-4">{t('توزيع الإيرادات')}</h3>
+          <h3 className="font-bold text-slate-800 mb-4">{t('التمويل حسب النوع')}</h3>
+          {pieData.length === 0 ? <p className="text-center text-slate-300 py-12 text-sm">{t('لا بيانات')}</p> : (<>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
                 {pieData.map((entry,i)=><Cell key={i} fill={entry.color}/>)}
               </Pie>
-              <Tooltip formatter={(v)=>`${v}%`}
+              <Tooltip formatter={(v)=>fmt(v)}
                 contentStyle={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:'8px',color:'#1E293B'}}/>
             </PieChart>
           </ResponsiveContainer>
@@ -159,12 +162,13 @@ export default function Dashboard() {
               <div key={d.name} className="flex items-center gap-2 text-xs">
                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{background:d.color}}/>
                 <span className="flex-1 text-slate-500">{t(d.name)}</span>
-                <span className="font-bold" style={{color:d.color}}>{d.value}%</span>
+                <span className="font-bold" style={{color:d.color}}>{fmt(d.value)}</span>
               </div>
             ))}
-          </div>
+          </div></>)}
         </div>
       </div>
+      )}
 
       {/* Recent RFQs & Competitions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

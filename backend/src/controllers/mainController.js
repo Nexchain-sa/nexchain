@@ -237,48 +237,49 @@ exports.dashboardStats = async (req, res) => {
   try {
     const id = req.user.id;
     const role = req.user.role;
+    const one = (sql, p = []) => pool.query(sql, p).then(r => r.rows[0] || {}).catch(() => ({}));
     let stats = {};
 
     if (role === 'buyer') {
-      const [rfq, po, inv, fin] = await Promise.all([
-        pool.query('SELECT COUNT(*) FROM rfqs WHERE buyer_id=$1', [id]),
-        pool.query('SELECT COUNT(*),COALESCE(SUM(total_amount),0) as total FROM purchase_orders WHERE buyer_id=$1', [id]),
-        pool.query('SELECT COUNT(*) FROM invoices WHERE buyer_id=$1', [id]),
-        pool.query(`SELECT COUNT(*) FROM financing_requests fr JOIN invoices i ON fr.invoice_id=i.id WHERE i.buyer_id=$1`, [id]),
+      const [rfq, po, inv, fin, mfg, disp] = await Promise.all([
+        one('SELECT COUNT(*)::int n FROM rfqs WHERE buyer_id=$1', [id]),
+        one('SELECT COUNT(*)::int n, COALESCE(SUM(total_amount),0)::float total FROM purchase_orders WHERE buyer_id=$1', [id]),
+        one('SELECT COUNT(*)::int n FROM invoices WHERE buyer_id=$1', [id]),
+        one(`SELECT COUNT(*)::int n FROM financing_requests WHERE requester_id=$1 AND status='funded'`, [id]),
+        one('SELECT COUNT(*)::int n, COALESCE(SUM(total_amount),0)::float v FROM manufacturing_orders WHERE customer_id=$1', [id]),
+        one(`SELECT COUNT(*)::int n FROM disputes WHERE raised_by=$1 AND status='open'`, [id]),
       ]);
-      stats = {
-        rfqs: +rfq.rows[0].count,
-        orders: +po.rows[0].count,
-        orders_value: po.rows[0].total,
-        invoices: +inv.rows[0].count,
-        financing: +fin.rows[0].count,
-      };
+      stats = { rfqs: rfq.n, orders: po.n, orders_value: po.total, invoices: inv.n, financing: fin.n, mfg_orders: mfg.n, mfg_value: mfg.v, open_disputes: disp.n };
     } else if (role === 'supplier') {
-      const [quotes, won, sales] = await Promise.all([
-        pool.query('SELECT COUNT(*) FROM quotes WHERE supplier_id=$1', [id]),
-        pool.query('SELECT COUNT(*) FROM quotes WHERE supplier_id=$1 AND status=$2', [id,'awarded']),
-        pool.query('SELECT COALESCE(SUM(total_amount),0) as total FROM purchase_orders WHERE supplier_id=$1', [id]),
+      const [quotes, won, sales, fac, rel, rate, market] = await Promise.all([
+        one('SELECT COUNT(*)::int n FROM quotes WHERE supplier_id=$1', [id]),
+        one(`SELECT COUNT(*)::int n FROM quotes WHERE supplier_id=$1 AND status='awarded'`, [id]),
+        one('SELECT COALESCE(SUM(total_amount),0)::float total FROM purchase_orders WHERE supplier_id=$1', [id]),
+        one('SELECT COUNT(*)::int n FROM manufacturing_orders WHERE factory_id=$1', [id]),
+        one('SELECT COALESCE(SUM(released_amount),0)::float v FROM manufacturing_orders WHERE factory_id=$1', [id]),
+        one('SELECT COALESCE(rating,0)::float r, COALESCE(rating_count,0)::int c FROM users WHERE id=$1', [id]),
+        one(`SELECT COUNT(*)::int n FROM manufacturing_orders WHERE status='pending_match'`),
       ]);
-      stats = {
-        quotes: +quotes.rows[0].count,
-        won: +won.rows[0].count,
-        win_rate: quotes.rows[0].count > 0 ? Math.round((won.rows[0].count / quotes.rows[0].count) * 100) : 0,
-        total_sales: sales.rows[0].total,
-      };
-    } else if (role === 'admin') {
-      const [users, rfqs, comps, fin] = await Promise.all([
-        pool.query('SELECT COUNT(*) FROM users WHERE role!=$1', ['admin']),
-        pool.query('SELECT COUNT(*) FROM rfqs'),
-        pool.query('SELECT COUNT(*) FROM competitions'),
-        pool.query('SELECT COUNT(*),COALESCE(SUM(requested_amount),0) as total FROM financing_requests'),
+      stats = { quotes: quotes.n, won: won.n, win_rate: quotes.n > 0 ? Math.round(won.n * 100 / quotes.n) : 0, total_sales: sales.total, factory_orders: fac.n, released: rel.v, rating: rate.r, rating_count: rate.c, open_market: market.n };
+    } else if (role === 'investor') {
+      const [pos, ret, sec] = await Promise.all([
+        one(`SELECT COUNT(*)::int n, COALESCE(SUM(offered_amount),0)::float v FROM financing_bids WHERE financier_id=$1 AND status='accepted'`, [id]),
+        one(`SELECT COALESCE(SUM(inst.amount),0)::float v FROM installments inst
+             JOIN financing_requests fr ON fr.id=inst.financing_request_id
+             JOIN financing_bids fb ON fb.financing_request_id=fr.id AND fb.status='accepted'
+             WHERE fb.financier_id=$1 AND inst.status='paid'`, [id]),
+        one(`SELECT COUNT(*)::int n FROM secondary_listings WHERE seller_id=$1 AND status='open'`, [id]),
       ]);
-      stats = {
-        users: +users.rows[0].count,
-        rfqs: +rfqs.rows[0].count,
-        competitions: +comps.rows[0].count,
-        financing_requests: +fin.rows[0].count,
-        financing_volume: fin.rows[0].total,
-      };
+      stats = { positions: pos.n, invested: pos.v, realized: ret.v, listed: sec.n };
+    } else if (role === 'admin' || role === 'owner') {
+      const [users, inv, mfg, fund, disp] = await Promise.all([
+        one(`SELECT COUNT(*)::int n, COUNT(*) FILTER (WHERE is_approved=false)::int pending FROM users WHERE role NOT IN ('admin','owner')`),
+        one('SELECT COALESCE(SUM(amount),0)::float v FROM invoices'),
+        one('SELECT COUNT(*)::int n, COALESCE(SUM(total_amount),0)::float v FROM manufacturing_orders'),
+        one(`SELECT COUNT(*)::int n, COALESCE(SUM(requested_amount),0)::float total FROM financing_requests WHERE status='funded'`),
+        one(`SELECT COUNT(*) FILTER (WHERE status='open')::int open, COUNT(*)::int total FROM disputes`),
+      ]);
+      stats = { users: users.n, pending_approvals: users.pending, gmv: (inv.v || 0) + (mfg.v || 0), mfg_orders: mfg.n, financing_requests: fund.n, financing_volume: fund.total, disputes_open: disp.open, disputes_total: disp.total };
     }
 
     res.json({ success: true, data: stats });
