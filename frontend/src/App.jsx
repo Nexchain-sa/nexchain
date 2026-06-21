@@ -39,7 +39,7 @@ const ProtectedRoute = ({ children, roles }) => {
 const App = () => (
   <LanguageProvider>
     <CurrencyProvider>
-    <BrowserRouter>
+    <BrowserRouter basename={process.env.PUBLIC_URL || undefined}>
     <AuthProvider>
       <Toaster position="bottom-left" toastOptions={{
         style: { background:'#1E293B', color:'#E8EAF6', border:'1px solid #EEF2FF', fontFamily:'Tajawal,sans-serif', direction:'rtl' },

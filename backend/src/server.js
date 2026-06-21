@@ -395,8 +395,19 @@ const autoSetup = async () => {
 
 // ── Security & Middlewares ────────────────────────────────────────────────────
 app.use(helmet());
+// السماح بعدة أصول (Netlify + GitHub Pages + التطوير) — المصادقة عبر Bearer token
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'https://zesty-belekoy-ef3240.netlify.app',
+  'https://nexchain-sa.github.io',
+].filter(Boolean);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, cb) => {
+    // اطلبات بلا origin (curl/الجوال) أو ضمن القائمة المسموحة
+    if (!origin || allowedOrigins.includes(origin) || /\.netlify\.app$/.test(origin)) return cb(null, true);
+    return cb(null, false);
+  },
   credentials: true,
 }));
 app.use(morgan('dev'));
