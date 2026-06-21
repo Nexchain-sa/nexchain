@@ -45,6 +45,7 @@ export default function Manufacturing() {
   const [matchSel, setMatchSel] = useState({});
   const [offers, setOffers] = useState({});
   const [offerForm, setOfferForm] = useState({});
+  const [facFilter, setFacFilter] = useState('all');
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); if (isAdmin || isBuyer) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
@@ -96,6 +97,18 @@ export default function Manufacturing() {
 
   const inp = "w-full rounded-xl px-4 py-2.5 text-sm border focus:outline-none";
 
+  const facCounts = {
+    open: orders.filter(o => o.status === 'pending_match').length,
+    mine: orders.filter(o => o.my_offer).length,
+    prod: orders.filter(o => o.status === 'in_production').length,
+    done: orders.filter(o => o.status === 'completed').length,
+  };
+  const shown = isFactory ? orders.filter(o =>
+    facFilter === 'open' ? o.status === 'pending_match'
+      : facFilter === 'mine' ? !!o.my_offer
+        : facFilter === 'prod' ? ['in_production', 'completed'].includes(o.status)
+          : true) : orders;
+
   return (
     <div className="font-arabic space-y-5" dir={dir}>
       <div className="flex items-center justify-between">
@@ -103,15 +116,31 @@ export default function Manufacturing() {
         {isBuyer && <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#4F46E5' }}><Plus size={15} /> {t('أمر تصنيع جديد')}</button>}
       </div>
 
+      {isFactory && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            ['all', t('الكل'), orders.length, '#4F46E5'],
+            ['open', t('مفتوحة للعروض'), facCounts.open, '#D97706'],
+            ['mine', t('عروضي المقدّمة'), facCounts.mine, '#7C3AED'],
+            ['prod', t('قيد الإنتاج/مكتملة'), facCounts.prod + facCounts.done, '#059669'],
+          ].map(([k, label, val, color]) => (
+            <button key={k} onClick={() => setFacFilter(k)} className="bg-white rounded-2xl p-4 border text-right transition-all" style={{ borderColor: facFilter === k ? color : '#E5E7EF', boxShadow: facFilter === k ? `0 0 0 1px ${color}` : 'none' }}>
+              <p className="text-2xl font-bold" style={{ color }}>{val}</p>
+              <p className="text-xs text-slate-500 mt-1">{label}</p>
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? <p className="text-center text-slate-400 py-12">{t('جارٍ التحميل...')}</p>
-        : orders.length === 0 ? (
+        : shown.length === 0 ? (
           <div className="bg-white rounded-2xl border py-14 text-center" style={{ borderColor: '#E5E7EF' }}>
             <Factory size={36} className="mx-auto text-slate-300 mb-2" />
             <p className="text-slate-400">{t('لا توجد أوامر تصنيع بعد.')}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map(o => {
+            {shown.map(o => {
               const os = ORDER_STATUS[o.status] || ORDER_STATUS.pending_match;
               const held = Number(o.escrow_funded || o.total_amount) - Number(o.released_amount || 0);
               return (

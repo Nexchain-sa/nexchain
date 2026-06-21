@@ -1,6 +1,30 @@
 const pool = require('../config/db');
+const { sendMail } = require('../config/mailer');
 
 const genNum = (p) => `${p}-${Date.now().toString().slice(-8)}`;
+
+// إشعار المصانع المطابقة بطلب تصنيع مفتوح جديد (داخل المنصة + بريد إن فُعّل SMTP)
+async function notifyFactoriesOfOpenOrder(order) {
+  try {
+    const cat = order.category || 'apparel';
+    const { rows: facs } = await pool.query(
+      `SELECT id, email, company_name, name, COALESCE(mfg_specialties,'[]'::jsonb) AS spec
+       FROM users WHERE role='supplier' AND is_approved=true`);
+    const matched = facs.filter(f => Array.isArray(f.spec) && f.spec.includes(cat));
+    const targets = matched.length ? matched : facs; // fallback: كل المصانع إن لم يوجد تطابق
+    for (const f of targets) {
+      await pool.query(
+        `INSERT INTO notifications(user_id,type,title,message,link) VALUES($1,'mfg_request',$2,$3,'/manufacturing')`,
+        [f.id, 'طلب تصنيع جديد', `طلب جديد: ${order.product} (كمية ${order.quantity || '-'}) — قدّم عرضك الآن`]
+      ).catch(() => {});
+      if (f.email) sendMail({
+        to: f.email,
+        subject: 'طلب تصنيع جديد على FLOWRIZ',
+        html: `<div dir="rtl"><p>وصل طلب تصنيع جديد مطابق لتخصصك:</p><p><b>${order.product}</b> — الكمية ${order.quantity || '-'}</p><p>ادخل المنصة وقدّم عرضك التنافسي الآن.</p></div>`,
+      }).catch(() => {});
+    }
+  } catch (e) { /* best-effort */ }
+}
 
 // قالب مراحل الإنتاج مع نسبة الدفعة لكل مرحلة (المجموع 100%)
 
@@ -92,6 +116,7 @@ exports.createOrder = async (req, res) => {
       );
     }
     await client.query('COMMIT');
+    if (!factory_id) notifyFactoriesOfOpenOrder(order); // طلب مفتوح للعروض → أبلغ المصانع
     res.status(201).json({ success: true, data: order });
   } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
   finally { client.release(); }
@@ -135,6 +160,11 @@ exports.submitOffer = async (req, res) => {
       ON CONFLICT(order_id,factory_id) DO UPDATE SET offered_price=$3, lead_days=$4, note=$5, status='pending', created_at=NOW()
       RETURNING *`,
       [req.params.id, req.user.id, offered_price, lead_days || null, note || null]);
+    // أبلغ المشتري بوصول عرض جديد
+    pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link)
+       SELECT customer_id,'mfg_offer','عرض تصنيع جديد', 'استلمت عرضًا جديدًا على طلب '||order_number||' — راجع العروض', '/manufacturing'
+       FROM manufacturing_orders WHERE id=$1`, [req.params.id]).catch(() => {});
     res.status(201).json({ success: true, data: rows[0], message: 'تم إرسال العرض' });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
@@ -167,6 +197,10 @@ exports.acceptOffer = async (req, res) => {
     await client.query(`UPDATE manufacturing_offers SET status='accepted' WHERE id=$1`, [offer.id]);
     await client.query(`UPDATE manufacturing_offers SET status='rejected' WHERE order_id=$1 AND id<>$2`, [offer.order_id, offer.id]);
     await client.query('COMMIT');
+    // أبلغ المصنع الفائز
+    pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link) VALUES($1,'mfg_awarded','تم قبول عرضك 🎉','تم قبول عرضك وبدأت رحلة الإنتاج — تابع المراحل','/manufacturing')`,
+      [offer.factory_id]).catch(() => {});
     res.json({ success: true, message: 'تم قبول العرض وبدء التصنيع' });
   } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
   finally { client.release(); }

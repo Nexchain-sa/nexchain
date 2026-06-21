@@ -516,4 +516,9 @@ export const DICT = {
   'تم تقديم طلب تمويل لهذا الأمر': "Financing requested for this order",
   'اتركه فارغًا لعرض الطلب على المصانع لتقديم عروضها': "Leave empty to open the request to factory offers",
   'عند تركه فارغًا، يظهر الطلب لكل المصانع لتنافس بعروضها ثم تختار الأنسب.': "If left empty, the request is shown to all factories to compete with offers, then you pick the best.",
+  'الإشعارات': "Notifications",
+  'لا توجد إشعارات': "No notifications",
+  'مفتوحة للعروض': "Open for offers",
+  'عروضي المقدّمة': "My offers",
+  'قيد الإنتاج/مكتملة': "In production / done",
 };

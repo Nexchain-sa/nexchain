@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authAPI } from '../utils/api';
+import { authAPI, dashboardAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -100,6 +100,16 @@ export default function Layout() {
   const [pwTarget, setPwTarget] = useState(null);
   const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
+  const [notifs, setNotifs] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const loadNotifs = () => dashboardAPI.notifications().then(r => setNotifs(r.data.data || [])).catch(() => {});
+  useEffect(() => { loadNotifs(); const id = setInterval(loadNotifs, 60000); return () => clearInterval(id); }, [user?.id]);
+  const unread = notifs.filter(n => !n.is_read).length;
+  const openNotifs = () => {
+    setNotifOpen(o => !o);
+    if (!notifOpen && unread > 0) dashboardAPI.markRead().then(() => setNotifs(ns => ns.map(n => ({ ...n, is_read: true })))).catch(() => {});
+  };
   const role  = user?.role || 'buyer';
   const baseRole = user?.baseRole || role;
   const items = navItems[role] || navItems.buyer;
@@ -244,10 +254,39 @@ export default function Layout() {
             style={{ borderColor:'#E5E7EF', color:'#475569' }}>
             <Globe size={15}/>{lang === 'ar' ? 'EN' : 'ع'}
           </button>
-          <button className="relative p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
-            <Bell size={20}/>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-600"/>
-          </button>
+          <div className="relative">
+            <button onClick={openNotifs} className="relative p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all">
+              <Bell size={20}/>
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">{unread > 9 ? '9+' : unread}</span>
+              )}
+            </button>
+            {notifOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)}/>
+                <div className="absolute mt-1 w-80 bg-white rounded-xl border shadow-lg z-20 overflow-hidden"
+                  style={{ borderColor:'#E5E7EF', [dir==='rtl'?'left':'right']: 0 }}>
+                  <div className="px-4 py-2.5 border-b flex items-center justify-between" style={{ borderColor:'#F1F5F9' }}>
+                    <span className="font-bold text-sm text-slate-700">{t('الإشعارات')}</span>
+                    {notifs.length > 0 && <span className="text-xs text-slate-400">{notifs.length}</span>}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifs.length === 0 ? (
+                      <p className="text-center text-slate-400 text-sm py-8">{t('لا توجد إشعارات')}</p>
+                    ) : notifs.map(n => (
+                      <button key={n.id}
+                        onClick={() => { setNotifOpen(false); if (n.link) navigate(n.link); }}
+                        className="w-full text-right px-4 py-3 border-b hover:bg-slate-50 transition-all block" style={{ borderColor:'#F4F6FB' }}>
+                        <p className="text-sm font-bold text-slate-700">{n.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{n.message}</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{new Date(n.created_at).toLocaleString(lang==='ar'?'ar':'en')}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white"
               style={{ background:'#4F46E5' }}>
