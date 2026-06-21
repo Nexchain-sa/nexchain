@@ -3,7 +3,7 @@ import { mfgAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Factory, Plus, CheckCircle, XCircle, ChevronDown, Sparkles, Banknote, Send } from 'lucide-react';
+import { Factory, Plus, CheckCircle, XCircle, ChevronDown, Sparkles, Banknote, Send, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STAGE_STATUS = {
@@ -46,6 +46,8 @@ export default function Manufacturing() {
   const [offers, setOffers] = useState({});
   const [offerForm, setOfferForm] = useState({});
   const [facFilter, setFacFilter] = useState('all');
+  const [reviewFor, setReviewFor] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
 
   const load = () => mfgAPI.list().then(r => { setOrders(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); if (isAdmin || isBuyer) mfgAPI.factories().then(r => setFactories(r.data.data || [])).catch(() => {}); }, []);
@@ -75,6 +77,11 @@ export default function Manufacturing() {
   const financeOrder = async (oid) => {
     setBusy('fin' + oid);
     try { const r = await mfgAPI.finance(oid); toast.success(r.data.message); load(); }
+    catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
+  };
+  const submitReview = async () => {
+    setBusy('review');
+    try { const r = await mfgAPI.review(reviewFor.id, reviewForm); toast.success(r.data.message); setReviewFor(null); setReviewForm({ rating: 5, comment: '' }); load(); }
     catch (e) { toast.error(e.response?.data?.message || t('خطأ')); } finally { setBusy(null); }
   };
 
@@ -176,6 +183,17 @@ export default function Manufacturing() {
                           : <button onClick={() => financeOrder(o.id)} disabled={busy === 'fin' + o.id} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}><Banknote size={13} /> {t('طلب تمويل هذا الأمر')}</button>
                       )}
 
+                      {/* تقييم المصنع بعد الاكتمال */}
+                      {(isBuyer || isAdmin) && o.status === 'completed' && (
+                        o.my_review ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold" style={{ color: '#D97706' }}>
+                            {[1, 2, 3, 4, 5].map(s => <Star key={s} size={13} fill={s <= o.my_review.rating ? '#F59E0B' : 'none'} color="#F59E0B" />)} {t('تقييمك للمصنع')}
+                          </span>
+                        ) : (
+                          <button onClick={() => { setReviewFor(o); setReviewForm({ rating: 5, comment: '' }); }} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}><Star size={13} /> {t('قيّم المصنع')}</button>
+                        )
+                      )}
+
                       {/* عرض المصنع (سوق التصنيع) */}
                       {isFactory && o.status === 'pending_match' && (
                         <div className="bg-[#F8FAFC] rounded-xl p-3 space-y-2">
@@ -199,7 +217,7 @@ export default function Manufacturing() {
                             <div key={of.id} className="flex items-center gap-2 border rounded-xl p-2 text-xs" style={{ borderColor: idx === 0 ? '#059669' : '#E5E7EF', background: idx === 0 ? '#ECFDF5' : '#FFFFFF' }}>
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-slate-700 truncate">{of.factory_name || of.factory_person} {idx === 0 && <span style={{ color: '#059669' }}>· {t('الأقل سعرًا')}</span>}</p>
-                                <p className="text-[11px] text-slate-400">{t('السعر')}: {fmt(of.offered_price)} · {t('مهلة')}: {of.lead_days || '-'} {t('يوم')} · ★ {Number(of.factory_rating)}</p>
+                                <p className="text-[11px] text-slate-400">{t('السعر')}: {fmt(of.offered_price)} · {t('مهلة')}: {of.lead_days || '-'} {t('يوم')} · ★ {Number(of.factory_rating)}{of.factory_rating_count ? ` (${of.factory_rating_count})` : ''}</p>
                                 {of.note && <p className="text-[11px] text-slate-400 truncate">{of.note}</p>}
                               </div>
                               <button onClick={() => acceptOffer(of.id, o.id)} disabled={busy === of.id} className="px-3 py-1.5 rounded-lg text-white font-bold flex-shrink-0" style={{ background: '#059669' }}>{t('قبول')}</button>
@@ -299,6 +317,29 @@ export default function Manufacturing() {
               <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {reviewFor && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir={dir} onClick={() => setReviewFor(null)}>
+          <div onClick={e => e.stopPropagation()} className="bg-white rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <div>
+              <h3 className="font-bold text-lg text-slate-800">{t('قيّم المصنع')}</h3>
+              <p className="text-xs text-slate-400 mt-0.5">{reviewFor.factory_name} · {reviewFor.order_number}</p>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              {[1, 2, 3, 4, 5].map(s => (
+                <button key={s} type="button" onClick={() => setReviewForm(f => ({ ...f, rating: s }))}>
+                  <Star size={34} fill={s <= reviewForm.rating ? '#F59E0B' : 'none'} color="#F59E0B" />
+                </button>
+              ))}
+            </div>
+            <textarea rows={3} placeholder={t('اكتب ملاحظتك عن جودة التصنيع والالتزام (اختياري)')} className={inp} style={{ borderColor: '#E5E7EF' }} value={reviewForm.comment} onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))} />
+            <div className="flex gap-2">
+              <button onClick={submitReview} disabled={busy === 'review'} className="flex-1 py-2.5 rounded-xl text-white font-bold" style={{ background: '#F59E0B' }}>{busy === 'review' ? t('جارٍ...') : t('إرسال التقييم')}</button>
+              <button onClick={() => setReviewFor(null)} className="px-4 py-2.5 rounded-xl border text-slate-600" style={{ borderColor: '#E5E7EF' }}>{t('إلغاء')}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -135,7 +135,8 @@ exports.listOrders = async (req, res) => {
         (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id) AS stage_total,
         (SELECT COUNT(*)::int FROM production_stages s WHERE s.order_id=o.id AND s.status='passed') AS stage_done,
         (SELECT COUNT(*)::int FROM manufacturing_offers mo WHERE mo.order_id=o.id) AS offer_count,
-        (SELECT row_to_json(x) FROM (SELECT offered_price, lead_days, status FROM manufacturing_offers WHERE order_id=o.id AND factory_id=$1) x) AS my_offer
+        (SELECT row_to_json(x) FROM (SELECT offered_price, lead_days, status FROM manufacturing_offers WHERE order_id=o.id AND factory_id=$1) x) AS my_offer,
+        (SELECT row_to_json(rv) FROM (SELECT rating, comment FROM reviews WHERE target_type='mfg_order' AND target_id=o.id AND author_id=$1) rv) AS my_review
       FROM manufacturing_orders o
       LEFT JOIN users c ON c.id=o.customer_id
       LEFT JOIN users f ON f.id=o.factory_id
@@ -172,7 +173,8 @@ exports.submitOffer = async (req, res) => {
 exports.listOffers = async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT o.*, f.company_name AS factory_name, f.name AS factory_person, COALESCE(f.rating,0) AS factory_rating
+      SELECT o.*, f.company_name AS factory_name, f.name AS factory_person,
+             COALESCE(f.rating,0) AS factory_rating, COALESCE(f.rating_count,0) AS factory_rating_count
       FROM manufacturing_offers o JOIN users f ON f.id=o.factory_id
       WHERE o.order_id=$1 ORDER BY o.offered_price ASC`, [req.params.id]);
     res.json({ success: true, data: rows });
@@ -315,6 +317,40 @@ exports.stageReceive = async (req, res) => {
     if (rem[0].n === 0) await client.query(`UPDATE manufacturing_orders SET status='completed' WHERE id=$1`, [stage.order_id]);
     await client.query('COMMIT');
     res.json({ success: true, message: 'تم تأكيد الاستلام والإفراج عن الدفعة الأخيرة' });
+  } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+  finally { client.release(); }
+};
+
+// ── تقييم المصنع بعد اكتمال الطلب (يحدّث سمعة المصنع) ──────────
+exports.submitReview = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const r = Math.round(Number(req.body.rating));
+    const comment = req.body.comment;
+    if (!(r >= 1 && r <= 5)) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'التقييم يجب أن يكون من 1 إلى 5' }); }
+    const { rows: ord } = await client.query(`SELECT * FROM manufacturing_orders WHERE id=$1`, [req.params.id]);
+    if (!ord.length) { await client.query('ROLLBACK'); return res.status(404).json({ success: false, message: 'الطلب غير موجود' }); }
+    const order = ord[0];
+    const isAdmin = ['admin', 'owner'].includes(req.user.role);
+    if (!isAdmin && order.customer_id !== req.user.id) { await client.query('ROLLBACK'); return res.status(403).json({ success: false, message: 'ليس طلبك' }); }
+    if (!order.factory_id) { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'لا يوجد مصنع لتقييمه' }); }
+    if (order.status !== 'completed') { await client.query('ROLLBACK'); return res.status(400).json({ success: false, message: 'يمكن التقييم بعد اكتمال الطلب فقط' }); }
+    await client.query(
+      `INSERT INTO reviews(target_type,target_id,subject_id,author_id,rating,comment)
+       VALUES('mfg_order',$1,$2,$3,$4,$5)
+       ON CONFLICT(target_type,target_id,author_id) DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, created_at=NOW()`,
+      [order.id, order.factory_id, req.user.id, r, comment || null]);
+    // إعادة حساب سمعة المصنع
+    await client.query(
+      `UPDATE users SET rating = COALESCE((SELECT ROUND(AVG(rating)::numeric,1) FROM reviews WHERE subject_id=$1),0),
+                        rating_count = (SELECT COUNT(*) FROM reviews WHERE subject_id=$1)
+       WHERE id=$1`, [order.factory_id]);
+    await client.query('COMMIT');
+    pool.query(
+      `INSERT INTO notifications(user_id,type,title,message,link) VALUES($1,'review','تقييم جديد ⭐',$2,'/manufacturing')`,
+      [order.factory_id, `حصلت على تقييم ${r}/5 على طلب ${order.order_number}`]).catch(() => {});
+    res.json({ success: true, message: 'تم إرسال التقييم — شكرًا لك' });
   } catch (err) { await client.query('ROLLBACK'); res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
   finally { client.release(); }
 };

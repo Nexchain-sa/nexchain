@@ -115,6 +115,7 @@ export const mfgAPI = {
   offers:      (id)      => API.get(`/manufacturing/orders/${id}/offers`),
   acceptOffer: (oid)     => API.put(`/manufacturing/offers/${oid}/accept`),
   finance:     (id)      => API.post(`/manufacturing/orders/${id}/finance`),
+  review:      (id,data) => API.post(`/manufacturing/orders/${id}/review`, data),
 };
 
 export const analyticsAPI = { impact: () => API.get('/impact') };

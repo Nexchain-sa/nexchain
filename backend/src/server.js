@@ -320,6 +320,21 @@ const autoSetup = async () => {
         UNIQUE(order_id, factory_id)
       );
     `).catch(()=>{});
+    // التقييمات والمراجعات (سمعة المصانع/الموردين)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        target_type VARCHAR(20) NOT NULL,
+        target_id UUID NOT NULL,
+        subject_id UUID NOT NULL REFERENCES users(id),
+        author_id UUID NOT NULL REFERENCES users(id),
+        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        comment TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(target_type, target_id, author_id)
+      );
+    `).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});

@@ -521,4 +521,10 @@ export const DICT = {
   'مفتوحة للعروض': "Open for offers",
   'عروضي المقدّمة': "My offers",
   'قيد الإنتاج/مكتملة': "In production / done",
+  'قيّم المصنع': "Rate the factory",
+  'تقييمك للمصنع': "Your rating",
+  'تقييمك': "Your rating",
+  'اكتب ملاحظتك عن جودة التصنيع والالتزام (اختياري)': "Write your note on manufacturing quality & commitment (optional)",
+  'إرسال التقييم': "Submit rating",
+  'تم إرسال التقييم — شكرًا لك': "Rating submitted — thank you",
 };
