@@ -89,5 +89,6 @@ router.put('/notifications/read',auth, mainC.markRead);
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
 router.get('/admin/users',           auth, requireRole('admin','owner'), mainC.adminUsers);
 router.put('/admin/users/:id/approve',auth,requireRole('admin','owner'), mainC.approveUser);
+router.post('/admin/test-email',     auth, requireRole('admin','owner'), mainC.testEmail);
 
 module.exports = router;

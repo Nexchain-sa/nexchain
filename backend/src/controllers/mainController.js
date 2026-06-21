@@ -568,3 +568,21 @@ exports.setAutoInvest = async (req, res) => {
     res.json({ success: true, data: rows[0], message: 'تم حفظ إعدادات الاستثمار التلقائي' });
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
+
+// اختبار إعداد البريد (للمالك/المدير) — يؤكد أن متغيرات SMTP مضبوطة وتعمل
+exports.testEmail = async (req, res) => {
+  try {
+    const { sendMail } = require('../config/mailer');
+    const to = (req.body && req.body.to) || req.user.email;
+    const sent = await sendMail({
+      to,
+      subject: 'اختبار بريد FLOWRIZ ✅',
+      html: '<div dir="rtl" style="font-family:Arial"><h3>تم ضبط البريد بنجاح</h3><p>هذه رسالة اختبار من منصة FLOWRIZ — الإشعارات عبر البريد مفعّلة الآن.</p></div>',
+    });
+    res.json({
+      success: true,
+      configured: sent,
+      message: sent ? `تم إرسال بريد اختبار إلى ${to}` : 'SMTP غير مضبوط — اضبط متغيرات البيئة SMTP_HOST/SMTP_USER/SMTP_PASS على Render',
+    });
+  } catch (err) { res.status(500).json({ success: false, message: 'فشل الإرسال: ' + (err.message || 'خطأ') }); }
+};

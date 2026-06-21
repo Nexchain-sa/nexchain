@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://nexchain-backend-5aja.onrender.com/api';
+const BASE_URL = 'https://flowriz-api.onrender.com/api';
 
 const API = axios.create({
   baseURL: BASE_URL,

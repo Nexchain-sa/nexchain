@@ -87,6 +87,7 @@ export const dashboardAPI = {
 export const adminAPI = {
   users:       ()           => API.get('/admin/users'),
   approveUser: (id, approve, note) => API.put(`/admin/users/${id}/approve`, { approve, note }),
+  testEmail:   (to)         => API.post('/admin/test-email', { to }),
 };
 
 export const categoriesAPI = { list: () => API.get('/categories') };
