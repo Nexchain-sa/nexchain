@@ -7,8 +7,9 @@ import {
   PieChart, Pie, Cell, BarChart,
 } from 'recharts';
 import {
-  BarChart3, TrendingUp, Factory, Banknote, Users, ShieldCheck, AlertTriangle, Star, RefreshCw, Calendar,
+  BarChart3, TrendingUp, Factory, Banknote, Users, ShieldCheck, AlertTriangle, Star, RefreshCw, Calendar, Download, Printer,
 } from 'lucide-react';
+import { downloadCSV, tableHTML, printReport } from '../utils/exporters';
 
 const fmtDate = (d) => d.toISOString().slice(0, 10);
 const PRESETS = [['7', '٧ أيام'], ['30', '٣٠ يوم'], ['90', '٩٠ يوم'], ['365', 'سنة'], ['custom', 'مخصّص']];
@@ -54,6 +55,28 @@ export default function AnalyticsDashboard() {
     </div>
   );
 
+  const facHeaders = [t('المصنع'), t('الأوامر'), t('القيمة'), t('المُفرَج'), t('التقييم'), t('مراجعة')];
+  const facRows = (d?.top_factories || []).map(f => [f.name, f.orders, f.value, f.released, f.rating, f.reviews]);
+  const exportCSV = () => downloadCSV('flowriz-top-factories.csv', facHeaders, facRows);
+  const exportPDF = () => {
+    const kpiRows = [
+      ['GMV', fmt(k.gmv)], [t('التمويل المموَّل'), `${fmt(k.financed_total)} (${k.financings_n || 0})`],
+      [t('قيمة التصنيع'), fmt(k.mfg_value)], [t('مُفرَج'), fmt(k.mfg_released)],
+      [t('مستخدمون جدد'), k.new_users || 0], [t('معدل السداد'), `${k.repayment_rate || 0}%`],
+      [t('اجتياز الجودة'), `${k.qa_pass_rate || 0}%`], [t('نزاعات مفتوحة'), k.disputes_open || 0],
+      [t('متوسط التقييم'), `${k.avg_rating || 0} (${k.reviews_n || 0})`],
+    ];
+    const monRows = (d?.monthly || []).map(m => [m.label, fmt(m.invoices), fmt(m.manufacturing), fmt(m.financing)]);
+    printReport({
+      title: t('لوحة التحليلات'), subtitle: `${from} → ${to}`, dir,
+      sections: [
+        { heading: t('المؤشرات'), html: tableHTML([t('المؤشر'), t('القيمة')], kpiRows) },
+        { heading: t('الاتجاه الشهري'), html: tableHTML([t('الشهر'), t('الفواتير'), t('التصنيع'), t('التمويل')], monRows) },
+        { heading: t('أفضل المصانع'), html: tableHTML(facHeaders, facRows.map(r => [r[0], r[1], fmt(r[2]), fmt(r[3]), r[4], r[5]])) },
+      ],
+    });
+  };
+
   const orderStatusData = (d?.order_status || []).map(x => ({ name: t(STATUS_LABEL[x.status] || x.status), value: x.n }));
   const modeData = (d?.financing_modes || []).map(x => ({ name: t(x.mode === 'shariah' ? '🌙 متوافق' : 'تقليدي'), value: x.v }));
   const catData = (d?.categories || []).map(x => ({ name: x.category, value: x.v }));
@@ -65,9 +88,13 @@ export default function AnalyticsDashboard() {
           <BarChart3 size={22} style={{ color: '#4F46E5' }} />
           <h1 className="text-xl font-bold text-slate-800">{t('لوحة التحليلات')}</h1>
         </div>
-        <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}>
-          <RefreshCw size={14} /> {t('تحديث')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} disabled={!d} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Download size={14} /> CSV</button>
+          <button onClick={exportPDF} disabled={!d} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Printer size={14} /> PDF</button>
+          <button onClick={fetchData} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}>
+            <RefreshCw size={14} /> {t('تحديث')}
+          </button>
+        </div>
       </div>
 
       {/* فلتر احترافي */}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { installmentAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { CreditCard, CheckCircle, Clock, AlertTriangle, Wallet, Upload, FileText, X } from 'lucide-react';
+import { CreditCard, CheckCircle, Clock, AlertTriangle, Wallet, Upload, FileText, X, Download, Printer } from 'lucide-react';
 import { uploadToCloudinary } from '../config/cloudinary';
+import { downloadCSV, tableHTML, printReport } from '../utils/exporters';
 import toast from 'react-hot-toast';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -78,12 +79,28 @@ export default function Installments() {
     </div>
   );
 
+  const exHeaders = [t('القسط'), ...(isAdmin ? [t('المدين')] : []), t('تاريخ الاستحقاق'), t('المبلغ'), t('الغرامة'), t('الحالة')];
+  const exRows = rows.map(r => [
+    `#${r.seq}`, ...(isAdmin ? [r.company_name || r.payer_name || '-'] : []),
+    r.due_date ? new Date(r.due_date).toLocaleDateString('en-CA') : '',
+    Number(r.amount) + Number(r.late_fee || 0), Number(r.late_fee || 0),
+    t((STATUS[r.status] || STATUS.due).label),
+  ]);
+  const exportCSV = () => downloadCSV('flowriz-installments.csv', exHeaders, exRows);
+  const exportPDF = () => printReport({ title: t('الأقساط'), subtitle: `${t('إجمالي المستحق')}: ${fmt(totalDue)} · ${paidCount} ${t('أقساط مدفوعة')}`, dir, sections: [{ html: tableHTML(exHeaders, exRows) }] });
+
   return (
     <div className="font-arabic space-y-5" dir={dir}>
-      <div className="flex items-center gap-2">
-        <CreditCard size={22} style={{ color: '#4F46E5' }} />
-        <h1 className="text-xl font-bold text-slate-800">{t('الأقساط')}</h1>
-        {isAdmin && <span className="text-xs text-slate-400">{t('— عرض جميع الأقساط واعتماد المدفوعات')}</span>}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <CreditCard size={22} style={{ color: '#4F46E5' }} />
+          <h1 className="text-xl font-bold text-slate-800">{t('الأقساط')}</h1>
+          {isAdmin && <span className="text-xs text-slate-400">{t('— عرض جميع الأقساط واعتماد المدفوعات')}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} disabled={!rows.length} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Download size={14} /> CSV</button>
+          <button onClick={exportPDF} disabled={!rows.length} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Printer size={14} /> PDF</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

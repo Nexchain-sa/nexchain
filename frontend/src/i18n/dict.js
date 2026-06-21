@@ -586,4 +586,10 @@ export const DICT = {
   'المصنع': "Factory",
   'الأوامر': "Orders",
   'القيمة': "Value",
+  'داخل': "In",
+  'خارج': "Out",
+  'المُفرَج': "Released",
+  'المؤشرات': "Metrics",
+  'المؤشر': "Metric",
+  'الشهر': "Month",
 };

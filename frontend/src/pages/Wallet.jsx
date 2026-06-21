@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { walletAPI } from '../utils/api';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
-import { Wallet as WalletIcon, ArrowDownLeft, ArrowUpRight, TrendingUp, Hash } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowDownLeft, ArrowUpRight, TrendingUp, Hash, Download, Printer } from 'lucide-react';
+import { downloadCSV, tableHTML, printReport } from '../utils/exporters';
 
 const CAT = {
   investment: { label: 'استثمار', color: '#4F46E5' },
@@ -34,11 +35,26 @@ export default function Wallet() {
   if (!d) return <p className="text-center text-slate-400 py-12 font-arabic" dir={dir}>{t('جارٍ التحميل...')}</p>;
   const s = d.summary || {};
 
+  const headers = [t('التاريخ'), t('الوصف'), t('النوع'), t('الاتجاه'), t('المبلغ')];
+  const rows = (d.transactions || []).map(x => [
+    x.date ? new Date(x.date).toLocaleDateString('en-CA') : '',
+    x.label, t((CAT[x.category] || {}).label || x.category),
+    x.dir === 'in' ? t('داخل') : t('خارج'), x.amount,
+  ]);
+  const exportCSV = () => downloadCSV('flowriz-wallet.csv', headers, rows);
+  const exportPDF = () => printReport({ title: t('المحفظة المالية'), subtitle: `${t('الصافي')}: ${fmt(s.net)} · ${s.count || 0} ${t('عدد الحركات')}`, dir, sections: [{ html: tableHTML(headers, rows) }] });
+
   return (
     <div className="font-arabic space-y-5" dir={dir}>
-      <div className="flex items-center gap-2">
-        <WalletIcon size={22} style={{ color: '#4F46E5' }} />
-        <h1 className="text-xl font-bold text-slate-800">{t('المحفظة المالية')}</h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <WalletIcon size={22} style={{ color: '#4F46E5' }} />
+          <h1 className="text-xl font-bold text-slate-800">{t('المحفظة المالية')}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} disabled={!rows.length} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Download size={14} /> CSV</button>
+          <button onClick={exportPDF} disabled={!rows.length} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border disabled:opacity-50 hover:bg-slate-50" style={{ borderColor: '#E5E7EF', color: '#475569' }}><Printer size={14} /> PDF</button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
