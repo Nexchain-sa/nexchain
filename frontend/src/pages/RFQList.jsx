@@ -3,11 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { rfqAPI, categoriesAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useLang } from '../context/LanguageContext';
 import { StatusBadge } from './Dashboard';
 import { Search, Plus, Clock } from 'lucide-react';
 
 export function RFQList() {
   const { user } = useAuth();
+  const { t, dir } = useLang();
   const [rfqs, setRfqs]   = useState([]);
   const [cats, setCats]   = useState([]);
   const [loading, setL]   = useState(true);
@@ -28,7 +30,6 @@ export function RFQList() {
     color: '#4F46E5',
   };
 
-  const { t, dir, lang } = useLang();
   return (
     <div className="font-arabic space-y-5" dir={dir}>
       <div className="flex items-center justify-between">
