@@ -11,13 +11,21 @@ const auth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { rows } = await pool.query(
-      'SELECT id, name, email, role, company_name, is_approved FROM users WHERE id = $1',
+      `SELECT id, name, email, role, company_name, is_approved, parent_id,
+              COALESCE(permissions,'[]'::jsonb) AS permissions, COALESCE(is_active,true) AS is_active
+       FROM users WHERE id = $1`,
       [decoded.id]
     );
     if (!rows.length)
       return res.status(401).json({ success: false, message: 'المستخدم غير موجود' });
 
     req.user = rows[0];
+    if (req.user.is_active === false)
+      return res.status(403).json({ success: false, message: 'الحساب موقوف — تواصل مع مدير حسابك' });
+
+    // الحساب الفعّال: الأعضاء الفرعيون يعملون تحت الحساب الرئيسي (parent)
+    req.user.account_id = req.user.parent_id || req.user.id;
+    req.user.is_primary = !req.user.parent_id;
 
     // الدور الفعّال — يتيح للحساب الواحد العمل بعدة أدوار (مشترٍ/بائع/ممول)
     req.user.baseRole = rows[0].role;
@@ -40,4 +48,12 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { auth, requireRole };
+// تحقّق صلاحية لعضو الحساب — الحساب الرئيسي يملك كل الصلاحيات تلقائيًّا
+const requirePermission = (perm) => (req, res, next) => {
+  if (req.user.is_primary) return next();
+  const perms = Array.isArray(req.user.permissions) ? req.user.permissions : [];
+  if (perms.includes(perm)) return next();
+  return res.status(403).json({ success: false, message: 'ليست لديك صلاحية لهذا الإجراء' });
+};
+
+module.exports = { auth, requireRole, requirePermission };

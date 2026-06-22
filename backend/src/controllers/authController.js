@@ -59,7 +59,9 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id,name,email,role,company_name,phone,city,logo_url,rating,total_orders,is_verified,is_approved,review_status,documents,created_at FROM users WHERE id=$1',
+      `SELECT id,name,email,role,company_name,phone,city,logo_url,rating,total_orders,is_verified,is_approved,review_status,documents,created_at,
+              parent_id, COALESCE(permissions,'[]'::jsonb) AS permissions, COALESCE(is_active,true) AS is_active,
+              (parent_id IS NULL) AS is_primary FROM users WHERE id=$1`,
       [req.user.id]
     );
     res.json({ success: true, user: rows[0] });

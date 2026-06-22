@@ -353,6 +353,10 @@ const autoSetup = async () => {
       );
     `).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0`).catch(()=>{});
+    // أعضاء الحساب والصلاحيات (مستخدمون فرعيون تحت حساب رئيسي)
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES users(id)`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});

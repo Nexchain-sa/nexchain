@@ -92,6 +92,13 @@ export const adminAPI = {
 
 export const categoriesAPI = { list: () => API.get('/categories') };
 
+export const accountAPI = {
+  members:      ()        => API.get('/account/members'),
+  addMember:    (data)    => API.post('/account/members', data),
+  updateMember: (id,data) => API.put(`/account/members/${id}`, data),
+  removeMember: (id)      => API.delete(`/account/members/${id}`),
+};
+
 export const installmentAPI = {
   list:    ()   => API.get('/installments'),
   pay:     (id, data) => API.post(`/installments/${id}/pay`, data),

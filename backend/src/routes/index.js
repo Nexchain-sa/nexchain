@@ -1,7 +1,8 @@
 const express = require('express');
 const router  = express.Router();
-const { auth, requireRole } = require('../middleware/auth');
+const { auth, requireRole, requirePermission } = require('../middleware/auth');
 const mfgC = require('../controllers/manufacturingController');
+const accountC = require('../controllers/accountController');
 const anC = require('../controllers/analyticsController');
 const secC = require('../controllers/secondaryController');
 const walletC = require('../controllers/walletController');
@@ -17,12 +18,18 @@ router.put ('/auth/profile',          auth, authC.updateProfile);
 router.put ('/auth/change-password',  auth, authC.changePassword);
 router.put ('/auth/documents',         auth, authC.updateDocuments);
 
+// ── ACCOUNT USERS & PERMISSIONS ───────────────────────────────────────────────
+router.get   ('/account/members',     auth, requirePermission('manage_users'), accountC.listMembers);
+router.post  ('/account/members',     auth, requirePermission('manage_users'), accountC.addMember);
+router.put   ('/account/members/:id', auth, requirePermission('manage_users'), accountC.updateMember);
+router.delete('/account/members/:id', auth, requirePermission('manage_users'), accountC.removeMember);
+
 // ── CATEGORIES ────────────────────────────────────────────────────────────────
 router.get('/categories', auth, mainC.getCategories);
 
 // ── RFQs ──────────────────────────────────────────────────────────────────────
 router.get ('/rfqs',                    auth, rfqC.list);
-router.post('/rfqs',                    auth, requireRole('buyer'), rfqC.create);
+router.post('/rfqs',                    auth, requireRole('buyer'), requirePermission('rfqs'), rfqC.create);
 router.get ('/rfqs/:id',                auth, rfqC.get);
 router.put ('/rfqs/:id',                auth, requireRole('buyer'), rfqC.update);
 router.delete('/rfqs/:id',              auth, requireRole('buyer'), rfqC.remove);
@@ -35,24 +42,24 @@ router.get ('/my-quotes',               auth, requireRole('supplier'), mainC.myQ
 
 // ── INVOICES ──────────────────────────────────────────────────────────────────
 router.get ('/invoices',                auth, mainC.listInvoices);
-router.post('/invoices',                auth, requireRole('buyer','supplier'), mainC.createInvoice);
+router.post('/invoices',                auth, requireRole('buyer','supplier'), requirePermission('invoices'), mainC.createInvoice);
 
 // ── FINANCING ─────────────────────────────────────────────────────────────────
-router.post('/financing/request',                           auth, mainC.requestFinancing);
+router.post('/financing/request',                           auth, requirePermission('financing'), mainC.requestFinancing);
 router.get ('/financing/requests',                          auth, mainC.listFinancingRequests);
 router.post('/financing/requests/:financing_request_id/bid',auth, requireRole('investor','admin','owner'), mainC.submitFinancingBid);
 router.post('/financing/bids/:bid_id/accept',               auth, mainC.acceptFinancingBid);
 router.post('/financing/requests/:financing_request_id/fund-by-platform', auth, requireRole('admin','owner'), mainC.fundByPlatform);
 
 router.get ('/installments',             auth, mainC.listInstallments);
-router.post('/installments/:id/pay',     auth, mainC.payInstallment);
+router.post('/installments/:id/pay',     auth, requirePermission('installments'), mainC.payInstallment);
 router.put ('/installments/:id/confirm', auth, requireRole('admin','owner'), mainC.confirmInstallment);
 router.get ('/deals', auth, mainC.listDeals);
 router.get ('/financing/agreements', auth, mainC.listAgreements);
 router.put ('/financing/requests/:id/sign', auth, mainC.signAgreement);
 
 // Manufacturing (ORDRAX)
-router.post('/manufacturing/orders',                 auth, requireRole('buyer','admin','owner'), mfgC.createOrder);
+router.post('/manufacturing/orders',                 auth, requireRole('buyer','admin','owner'), requirePermission('manufacturing'), mfgC.createOrder);
 router.get ('/manufacturing/orders',                 auth, mfgC.listOrders);
 router.get ('/manufacturing/orders/:id/stages',      auth, mfgC.getStages);
 router.put ('/manufacturing/orders/:id/match',       auth, requireRole('admin','owner'), mfgC.matchFactory);

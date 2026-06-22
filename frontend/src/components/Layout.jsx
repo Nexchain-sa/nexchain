@@ -119,7 +119,12 @@ export default function Layout() {
   };
   const role  = user?.role || 'buyer';
   const baseRole = user?.baseRole || role;
-  const items = navItems[role] || navItems.buyer;
+  const isPrimary = user?.is_primary ?? !user?.parent_id;
+  const canManageUsers = isPrimary || (Array.isArray(user?.permissions) && user.permissions.includes('manage_users'));
+  const items = [
+    ...(navItems[role] || navItems.buyer),
+    ...(canManageUsers ? [{ to: '/account/users', icon: Users, label: 'المستخدمون والصلاحيات' }] : []),
+  ];
   const badge = roleBadgeStyle[role] || roleBadgeStyle.buyer;
   const isOwner = role === 'owner' || role === 'admin';
 
