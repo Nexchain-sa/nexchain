@@ -1,7 +1,10 @@
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 
-const ALL_PERMS = ['manage_users', 'rfqs', 'invoices', 'financing', 'manufacturing', 'installments'];
+const ALL_PERMS = [
+  'manage_users', 'rfqs', 'invoices', 'financing', 'manufacturing', 'installments',
+  'qa', 'disputes', 'approve_payments', 'review_accounts', 'invest',
+];
 const cleanPerms = (p) => (Array.isArray(p) ? p.filter(x => ALL_PERMS.includes(x)) : []);
 
 // أعضاء حسابي (المستخدمون الفرعيون تحت الحساب الرئيسي)

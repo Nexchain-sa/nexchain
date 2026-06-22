@@ -616,4 +616,9 @@ export const DICT = {
   'الأقساط والمدفوعات': "Installments & payments",
   'كلمة المرور (6 أحرف على الأقل)': "Password (min 6 chars)",
   'إضافة': "Add",
+  'فحص الجودة': "Quality control",
+  'التحكيم في النزاعات': "Dispute arbitration",
+  'اعتماد المدفوعات': "Approve payments",
+  'مراجعة الحسابات الجديدة': "Review new accounts",
+  'الاستثمار وتقديم العروض': "Invest & submit offers",
 };

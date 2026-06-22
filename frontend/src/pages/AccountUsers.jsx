@@ -11,6 +11,11 @@ const PERMS = [
   ['financing', 'التمويل'],
   ['manufacturing', 'التصنيع'],
   ['installments', 'الأقساط والمدفوعات'],
+  ['qa', 'فحص الجودة'],
+  ['disputes', 'التحكيم في النزاعات'],
+  ['approve_payments', 'اعتماد المدفوعات'],
+  ['review_accounts', 'مراجعة الحسابات الجديدة'],
+  ['invest', 'الاستثمار وتقديم العروض'],
 ];
 
 export default function AccountUsers() {
