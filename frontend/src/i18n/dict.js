@@ -621,4 +621,9 @@ export const DICT = {
   'اعتماد المدفوعات': "Approve payments",
   'مراجعة الحسابات الجديدة': "Review new accounts",
   'الاستثمار وتقديم العروض': "Invest & submit offers",
+  'سجل النشاط': "Activity log",
+  'لا يوجد نشاط مسجّل بعد.': "No activity recorded yet.",
+  'قبل': "•",
+  'د': "m",
+  'س': "h",
 };

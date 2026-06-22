@@ -55,6 +55,16 @@ exports.updateMember = async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
 };
 
+// سجل نشاط الحساب (آخر 100 عملية)
+exports.activity = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT actor_name, actor_role, action, method, path, created_at
+       FROM activity_log WHERE account_id=$1 ORDER BY created_at DESC LIMIT 100`, [req.user.account_id]);
+    res.json({ success: true, data: rows });
+  } catch (err) { res.status(500).json({ success: false, message: 'خطأ في الخادم' }); }
+};
+
 exports.removeMember = async (req, res) => {
   try {
     if (!req.user.is_primary) return res.status(403).json({ success: false, message: 'غير مصرّح' });

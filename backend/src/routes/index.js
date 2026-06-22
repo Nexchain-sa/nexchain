@@ -23,6 +23,7 @@ router.get   ('/account/members',     auth, requirePermission('manage_users'), a
 router.post  ('/account/members',     auth, requirePermission('manage_users'), accountC.addMember);
 router.put   ('/account/members/:id', auth, requirePermission('manage_users'), accountC.updateMember);
 router.delete('/account/members/:id', auth, requirePermission('manage_users'), accountC.removeMember);
+router.get   ('/account/activity',    auth, requirePermission('manage_users'), accountC.activity);
 
 // ── CATEGORIES ────────────────────────────────────────────────────────────────
 router.get('/categories', auth, mainC.getCategories);

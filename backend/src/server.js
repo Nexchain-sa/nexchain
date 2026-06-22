@@ -357,6 +357,21 @@ const autoSetup = async () => {
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES users(id)`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`).catch(()=>{});
+    // سجل النشاط/التدقيق
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        account_id UUID,
+        actor_id UUID,
+        actor_name VARCHAR(200),
+        actor_role VARCHAR(20),
+        method VARCHAR(8),
+        path VARCHAR(300),
+        action VARCHAR(160),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `).catch(()=>{});
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_activity_account ON activity_log(account_id, created_at DESC)`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_specialties JSONB DEFAULT '[]'::jsonb`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_capacity INTEGER DEFAULT 1000`).catch(()=>{});
     await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mfg_lead_days INTEGER DEFAULT 14`).catch(()=>{});
@@ -417,6 +432,9 @@ app.use('/api/', rateLimit({
 
 // Static uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// سجل النشاط — يوثّق العمليات الناجحة بعد انتهاء الاستجابة
+app.use(require('./middleware/audit'));
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api', routes);

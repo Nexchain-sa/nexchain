@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { accountAPI } from '../utils/api';
 import { useLang } from '../context/LanguageContext';
-import { Users, Plus, Trash2, ShieldCheck, Check } from 'lucide-react';
+import { Users, Plus, Trash2, ShieldCheck, Check, Activity, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PERMS = [
@@ -25,9 +25,25 @@ export default function AccountUsers() {
   const [busy, setBusy] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '', permissions: [] });
+  const [tab, setTab] = useState('users');
+  const [acts, setActs] = useState([]);
+  const [actLoading, setActLoading] = useState(false);
 
   const load = () => accountAPI.members().then(r => { setMembers(r.data.data || []); setLoading(false); }).catch(() => setLoading(false));
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (tab !== 'activity') return;
+    setActLoading(true);
+    accountAPI.activity().then(r => { setActs(r.data.data || []); setActLoading(false); }).catch(() => setActLoading(false));
+  }, [tab]);
+
+  const timeAgo = (iso) => {
+    const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return t('الآن');
+    if (s < 3600) return `${t('قبل')} ${Math.floor(s / 60)} ${t('د')}`;
+    if (s < 86400) return `${t('قبل')} ${Math.floor(s / 3600)} ${t('س')}`;
+    return new Date(iso).toLocaleDateString(dir === 'rtl' ? 'ar' : 'en');
+  };
 
   const togglePerm = (list, key, on) => on ? [...new Set([...list, key])] : list.filter(p => p !== key);
 
@@ -62,9 +78,42 @@ export default function AccountUsers() {
           <Users size={22} style={{ color: '#4F46E5' }} />
           <h1 className="text-xl font-bold text-slate-800">{t('المستخدمون والصلاحيات')}</h1>
         </div>
-        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#4F46E5' }}><Plus size={15} /> {t('إضافة مستخدم')}</button>
+        {tab === 'users' && <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold" style={{ background: '#4F46E5' }}><Plus size={15} /> {t('إضافة مستخدم')}</button>}
       </div>
-      <p className="text-xs text-slate-400 -mt-2">{t('أضف أعضاء فريقك تحت حسابك وحدّد ما يستطيع كلٌّ منهم الوصول إليه.')}</p>
+
+      <div className="flex items-center gap-2">
+        {[['users', t('المستخدمون'), Users], ['activity', t('سجل النشاط'), Activity]].map(([k, label, Icon]) => (
+          <button key={k} onClick={() => setTab(k)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold transition-all"
+            style={tab === k ? { background: '#4F46E5', color: '#fff' } : { background: '#F1F5F9', color: '#475569' }}>
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'activity' ? (
+        actLoading ? <p className="text-center text-slate-400 py-12">{t('جارٍ التحميل...')}</p>
+          : acts.length === 0 ? (
+            <div className="bg-white rounded-2xl border py-14 text-center" style={{ borderColor: '#E5E7EF' }}>
+              <Activity size={36} className="mx-auto text-slate-300 mb-2" />
+              <p className="text-slate-400">{t('لا يوجد نشاط مسجّل بعد.')}</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border divide-y" style={{ borderColor: '#E5E7EF' }}>
+              {acts.map((a, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3" style={{ borderColor: '#F1F5F9' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0" style={{ background: '#7C3AED' }}>{(a.actor_name || '?')[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-700"><span className="font-bold">{a.actor_name}</span> <span className="text-slate-500">{t(a.action)}</span></p>
+                    <p className="text-[11px] text-slate-400">{t(({ owner: 'مالك المنصة', admin: 'مدير النظام', buyer: 'مشترٍ', supplier: 'مورد', investor: 'مستثمر' })[a.actor_role] || a.actor_role)}</p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 flex items-center gap-1 flex-shrink-0"><Clock size={11} /> {timeAgo(a.created_at)}</span>
+                </div>
+              ))}
+            </div>
+          )
+      ) : (
+      <>
+      <p className="text-xs text-slate-400">{t('أضف أعضاء فريقك تحت حسابك وحدّد ما يستطيع كلٌّ منهم الوصول إليه.')}</p>
 
       {loading ? <p className="text-center text-slate-400 py-12">{t('جارٍ التحميل...')}</p>
         : members.length === 0 ? (
@@ -103,6 +152,8 @@ export default function AccountUsers() {
             ))}
           </div>
         )}
+      </>
+      )}
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" dir={dir} onClick={() => setShowAdd(false)}>

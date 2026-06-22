@@ -97,6 +97,7 @@ export const accountAPI = {
   addMember:    (data)    => API.post('/account/members', data),
   updateMember: (id,data) => API.put(`/account/members/${id}`, data),
   removeMember: (id)      => API.delete(`/account/members/${id}`),
+  activity:     ()        => API.get('/account/activity'),
 };
 
 export const installmentAPI = {
