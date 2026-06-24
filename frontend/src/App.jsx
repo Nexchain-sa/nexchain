@@ -29,6 +29,30 @@ import AdminPanel from './pages/AdminPanel';
 import Profile    from './pages/Profile';
 import Layout     from './components/Layout';
 
+class ErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) { console.error('App crash:', err, info); }
+  render() {
+    if (this.state.err) {
+      return (
+        <div dir="rtl" style={{ padding: 24, fontFamily: 'Tajawal,sans-serif', maxWidth: 760, margin: '40px auto' }}>
+          <h2 style={{ color: '#DC2626', marginBottom: 8 }}>حدث خطأ في تحميل الصفحة</h2>
+          <p style={{ color: '#64748B', fontSize: 13, marginBottom: 12 }}>إن استمرت المشكلة بعد إعادة التحميل، أرسل لي نص الخطأ التالي:</p>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#FEF2F2', padding: 12, borderRadius: 8, color: '#991B1B', fontSize: 12, border: '1px solid #FCA5A5' }}>
+            {String((this.state.err && (this.state.err.stack || this.state.err.message)) || this.state.err)}
+          </pre>
+          <button onClick={() => { try { if ('caches' in window) caches.keys().then(ks => ks.forEach(k => caches.delete(k))); } catch (e) {} window.location.reload(); }}
+            style={{ marginTop: 12, padding: '10px 20px', background: '#4F46E5', color: '#fff', border: 0, borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
+            إعادة تحميل
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen" style={{background:'#F4F6FB'}}><div className="text-xl animate-pulse" style={{color:'#4F46E5'}}>جارٍ التحميل...</div></div>;
@@ -38,6 +62,7 @@ const ProtectedRoute = ({ children, roles }) => {
 };
 
 const App = () => (
+  <ErrorBoundary>
   <LanguageProvider>
     <CurrencyProvider>
     <BrowserRouter basename={process.env.PUBLIC_URL || undefined}>
@@ -78,6 +103,7 @@ const App = () => (
     </BrowserRouter>
     </CurrencyProvider>
   </LanguageProvider>
+  </ErrorBoundary>
 );
 
 export default App;

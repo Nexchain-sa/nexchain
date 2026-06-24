@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "prod", "runtimeExecutable": "npx", "runtimeArgs": ["-y", "serve", "frontend/_preview", "-l", "5050"], "port": 5050 }
+  ]
+}
