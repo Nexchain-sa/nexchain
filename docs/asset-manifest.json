@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "C:/Program Files/Git/nexchain/static/css/main.669d5165.css",
-    "main.js": "C:/Program Files/Git/nexchain/static/js/main.cff88c3f.js",
-    "index.html": "C:/Program Files/Git/nexchain/index.html",
-    "main.669d5165.css.map": "C:/Program Files/Git/nexchain/static/css/main.669d5165.css.map",
-    "main.cff88c3f.js.map": "C:/Program Files/Git/nexchain/static/js/main.cff88c3f.js.map"
+    "main.css": "/nexchain/static/css/main.669d5165.css",
+    "main.js": "/nexchain/static/js/main.be219471.js",
+    "index.html": "/nexchain/index.html",
+    "main.669d5165.css.map": "/nexchain/static/css/main.669d5165.css.map",
+    "main.be219471.js.map": "/nexchain/static/js/main.be219471.js.map"
   },
   "entrypoints": [
     "static/css/main.669d5165.css",
-    "static/js/main.cff88c3f.js"
+    "static/js/main.be219471.js"
   ]
 }
