@@ -1,8 +1,17 @@
 {
   "short_name": "FLOWRIZ",
-  "name": "FLOWRIZ - منصة سلاسل الإمداد",
+  "name": "FLOWRIZ — منصة سلاسل الإمداد الذكية",
+  "lang": "ar",
+  "dir": "rtl",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "theme_color": "#0A0F2E",
-  "background_color": "#0A0F2E"
+  "orientation": "portrait",
+  "theme_color": "#4F46E5",
+  "background_color": "#F4F6FB",
+  "icons": [
+    { "src": "favicon.ico", "sizes": "16x16 32x32 48x48 64x64", "type": "image/x-icon" },
+    { "src": "icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
+    { "src": "icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
 }

@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/nexchain/static/css/main.669d5165.css",
-    "main.js": "/nexchain/static/js/main.c16bf7ba.js",
+    "main.js": "/nexchain/static/js/main.af3c2342.js",
     "index.html": "/nexchain/index.html",
     "main.669d5165.css.map": "/nexchain/static/css/main.669d5165.css.map",
-    "main.c16bf7ba.js.map": "/nexchain/static/js/main.c16bf7ba.js.map"
+    "main.af3c2342.js.map": "/nexchain/static/js/main.af3c2342.js.map"
   },
   "entrypoints": [
     "static/css/main.669d5165.css",
-    "static/js/main.c16bf7ba.js"
+    "static/js/main.af3c2342.js"
   ]
 }
