@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { useCurrency } from '../context/CurrencyContext';
 import {
-  Factory, Banknote, ShieldCheck, BarChart3, Repeat, Gauge, ArrowLeft, Globe, CheckCircle2,
+  Factory, Banknote, ShieldCheck, BarChart3, Repeat, Gauge, ArrowLeft, Globe, CheckCircle2, ChevronDown,
 } from 'lucide-react';
+
+const FAQ = [
+  ['ما هي منصة FLOWRIZ؟', 'منصة سعودية تربط المشترين والموردين والمصانع والممولين في منظومة واحدة، من طلب الشراء والتصنيع حتى التمويل والتسوية، مع ضمان للدفعات وتقييم للمخاطر.'],
+  ['هل التسجيل والاستخدام مجاني؟', 'نعم، إنشاء الحساب والبدء مجاني. تُراجَع مستنداتك وتُعتمد من إدارة المنصة قبل التفعيل.'],
+  ['كيف يعمل ضمان الدفعات؟', 'تُحجَز المدفوعات في الضمان وتُفرَج عنها مرحلةً بمرحلة بعد اجتياز الجودة والاستلام السليم — مبدأ «لا جودة، لا دفع».'],
+  ['ما المستندات المطلوبة للتسجيل؟', 'السجل التجاري، عقد التأسيس، هوية الملّاك، آخر قوائم مالية معتمدة، الملف التعريفي، شهادة ضريبة القيمة المضافة، شهادة الزكاة، وكشف الحساب البنكي.'],
+  ['كيف أحصل على تمويل؟', 'قدّم طلب تمويل على فاتورتك أو أمر تصنيعك، فيتنافس الممولون والمنصة عليه، أو يموّله مستثمر آليًّا وفق معاييره، ثم تسدّد أقساطًا.'],
+  ['هل يوجد خيار متوافق مع الشريعة؟', 'نعم، تدعم المنصة وضع تمويل متوافق مع الشريعة إلى جانب الوضع التقليدي.'],
+];
 
 const FEATURES = [
   { icon: Factory, color: '#4F46E5', title: 'سوق تصنيع تنافسي', desc: 'انشر طلب تصنيع، تتنافس المصانع بعروضها، واختر الأنسب سعرًا ومهلةً وتقييمًا.' },
@@ -26,6 +35,7 @@ export default function Landing() {
   const { user } = useAuth();
   const { t, dir, lang, toggle } = useLang();
   const { fmt } = useCurrency();
+  const [openFaq, setOpenFaq] = useState(null);
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
@@ -105,6 +115,27 @@ export default function Landing() {
               <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">{t(s.desc)}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-6 lg:px-12 py-12" style={{ background: '#fff' }}>
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-2xl lg:text-3xl font-bold text-slate-900 text-center mb-10">{t('الأسئلة الشائعة')}</h2>
+          <div className="space-y-3">
+            {FAQ.map(([q, a], i) => (
+              <div key={i} className="rounded-2xl border overflow-hidden" style={{ borderColor: '#E5E7EF' }}>
+                <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between gap-3 px-5 py-4 text-right">
+                  <span className="font-bold text-slate-800 text-sm">{t(q)}</span>
+                  <ChevronDown size={18} className="text-slate-400 flex-shrink-0 transition-transform" style={{ transform: openFaq === i ? 'rotate(180deg)' : 'none' }} />
+                </button>
+                {openFaq === i && (
+                  <p className="px-5 pb-4 text-sm text-slate-500 leading-relaxed">{t(a)}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
