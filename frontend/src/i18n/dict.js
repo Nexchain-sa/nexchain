@@ -626,4 +626,6 @@ export const DICT = {
   'قبل': "•",
   'د': "m",
   'س': "h",
+  'الخادم يستيقظ من وضع السكون — أعد المحاولة خلال ٣٠ ثانية': "The server is waking up — please try again in ~30 seconds",
+  'بيانات الدخول غير صحيحة': "Incorrect email or password",
 };

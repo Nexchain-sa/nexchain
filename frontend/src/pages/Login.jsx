@@ -19,7 +19,10 @@ export default function Login() {
       toast.success((lang==='ar'?'مرحباً ':'Welcome ') + user.name + '!');
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || t('خطأ في تسجيل الدخول'));
+      // عند نوم خادم Render: مهلة منتهية أو لا استجابة → رسالة ودّية بدل خطأ عام
+      const coldStart = err.code === 'ECONNABORTED' || !err.response;
+      if (coldStart) toast.error(t('الخادم يستيقظ من وضع السكون — أعد المحاولة خلال ٣٠ ثانية'), { duration: 6000 });
+      else toast.error(err.response?.data?.message || t('بيانات الدخول غير صحيحة'));
     } finally { setLoading(false); }
   };
 

@@ -403,6 +403,11 @@ const autoSetup = async () => {
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
+    // قفل الحسابات التجريبية للإطلاق العام (فعّله بضبط LOCK_DEMOS=1 في Render) — يبقى حساب المالك فعّالًا
+    if (process.env.LOCK_DEMOS) {
+      await client.query(`UPDATE users SET is_active=false WHERE email IN ('admin@FLOWRIZ.sa','buyer@demo.com','supplier@demo.com')`).catch(()=>{});
+      console.log('🔒 Demo accounts locked (LOCK_DEMOS set).');
+    }
     console.log('✅ All accounts ready! Owner: owner@FLOWRIZ.sa');
 
   } catch (err) {
