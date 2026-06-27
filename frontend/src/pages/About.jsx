@@ -2,11 +2,11 @@ import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
-import { Target, Eye, Globe, ArrowLeft, ShieldCheck, Handshake, Zap, Scale } from 'lucide-react';
+import { Target, Eye, Globe, ArrowLeft, ShieldCheck, Users, Zap, Scale } from 'lucide-react';
 
 const VALUES = [
   { icon: ShieldCheck, color: '#4F46E5', title: 'الثقة والشفافية', desc: 'كل عملية موثّقة، والمدفوعات مضمونة، والقرارات مبنية على بيانات واضحة.' },
-  { icon: Handshake, color: '#059669', title: 'التمكين', desc: 'نمكّن المنشآت الصغيرة والمتوسطة من الوصول للتصنيع والتمويل بسهولة وعدالة.' },
+  { icon: Users, color: '#059669', title: 'التمكين', desc: 'نمكّن المنشآت الصغيرة والمتوسطة من الوصول للتصنيع والتمويل بسهولة وعدالة.' },
   { icon: Zap, color: '#D97706', title: 'الكفاءة', desc: 'نختصر دورة الإمداد من الطلب حتى التسوية في منظومة واحدة سريعة.' },
   { icon: Scale, color: '#7C3AED', title: 'العدالة', desc: 'منافسة مفتوحة وتقييم موضوعي للمخاطر يضمن فرصًا متكافئة للجميع.' },
 ];
