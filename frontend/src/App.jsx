@@ -7,6 +7,7 @@ import { CurrencyProvider } from './context/CurrencyContext';
 
 // Pages
 import Landing    from './pages/Landing';
+import About      from './pages/About';
 import Login      from './pages/Login';
 import Register   from './pages/Register';
 import Dashboard  from './pages/Dashboard';
@@ -75,6 +76,7 @@ const App = () => (
       }} />
       <Routes>
         <Route path="/welcome"  element={<Landing />} />
+        <Route path="/about"    element={<About />} />
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

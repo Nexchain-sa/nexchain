@@ -47,6 +47,7 @@ export default function Landing() {
           <span className="font-bold text-xl tracking-widest text-white">FLOWRIZ</span>
         </div>
         <div className="flex items-center gap-2">
+          <Link to="/about" className="hidden sm:block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-200 hover:bg-white/10">{t('من نحن')}</Link>
           <button onClick={toggle} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold text-slate-200 hover:bg-white/10">
             <Globe size={15} />{lang === 'ar' ? 'EN' : 'ع'}
           </button>
@@ -156,6 +157,13 @@ export default function Landing() {
       </section>
 
       <footer className="px-6 lg:px-12 py-8 text-center text-xs text-slate-400 border-t" style={{ borderColor: '#E5E7EF' }}>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <Link to="/about" className="hover:text-slate-600">{t('من نحن')}</Link>
+          <span>·</span>
+          <Link to="/login" className="hover:text-slate-600">{t('تسجيل الدخول')}</Link>
+          <span>·</span>
+          <Link to="/register" className="hover:text-slate-600">{t('إنشاء حساب')}</Link>
+        </div>
         <span className="font-bold tracking-widest" style={{ color: '#4F46E5' }}>FLOWRIZ</span> · {t('منصة سلاسل الإمداد الذكية')} © 2026
       </footer>
     </div>
