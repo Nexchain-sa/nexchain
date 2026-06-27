@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 
 // Pages
+import Landing    from './pages/Landing';
 import Login      from './pages/Login';
 import Register   from './pages/Register';
 import Dashboard  from './pages/Dashboard';
@@ -56,7 +57,7 @@ class ErrorBoundary extends React.Component {
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen" style={{background:'#F4F6FB'}}><div className="text-xl animate-pulse" style={{color:'#4F46E5'}}>جارٍ التحميل...</div></div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/welcome" replace />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
   return children;
 };
@@ -73,6 +74,7 @@ const App = () => (
         error:   { iconTheme: { primary:'#ef4444', secondary:'#fff' } },
       }} />
       <Routes>
+        <Route path="/welcome"  element={<Landing />} />
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
