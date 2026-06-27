@@ -628,4 +628,8 @@ export const DICT = {
   'س': "h",
   'الخادم يستيقظ من وضع السكون — أعد المحاولة خلال ٣٠ ثانية': "The server is waking up — please try again in ~30 seconds",
   'بيانات الدخول غير صحيحة': "Incorrect email or password",
+  'اختبار البريد': "Test email",
+  'تم إرسال بريد اختبار إلى بريدك ✅': "Test email sent to your inbox ✅",
+  'البريد غير مفعّل بعد — اضبط متغيّرات SMTP في Render': "Email not enabled yet — set SMTP variables in Render",
+  'فشل إرسال البريد': "Failed to send email",
 };

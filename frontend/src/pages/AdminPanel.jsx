@@ -15,6 +15,16 @@ export function AdminPanel() {
   const [reviewUser, setReviewUser] = useState(null);
   const [reviewNote, setReviewNote] = useState('');
   const openReview = (u) => { setReviewNote(''); setReviewUser(u); };
+  const [emailBusy, setEmailBusy] = useState(false);
+  const testEmail = async () => {
+    setEmailBusy(true);
+    try {
+      const r = await adminAPI.testEmail();
+      if (r.data?.configured) toast.success(t('تم إرسال بريد اختبار إلى بريدك ✅'));
+      else toast(t('البريد غير مفعّل بعد — اضبط متغيّرات SMTP في Render'), { icon: '⚙️', duration: 7000 });
+    } catch (e) { toast.error(e.response?.data?.message || t('فشل إرسال البريد')); }
+    finally { setEmailBusy(false); }
+  };
 
   const load = () => {
     adminAPI.users().then(r=>{ setUsers(r.data.data||[]); setL(false); }).catch(()=>setL(false));
@@ -43,13 +53,22 @@ export function AdminPanel() {
 
   return (
     <div className="font-arabic space-y-5" dir={dir}>
-      <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-        {isOwner
-          ? <Crown size={20} style={{ color:'#7C3AED' }}/>
-          : <Users size={20} style={{ color:'#4F46E5' }}/>
-        }
-        {isOwner ? t('لوحة مالك المنصة') : t('لوحة إدارة المستخدمين')}
-      </h1>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          {isOwner
+            ? <Crown size={20} style={{ color:'#7C3AED' }}/>
+            : <Users size={20} style={{ color:'#4F46E5' }}/>
+          }
+          {isOwner ? t('لوحة مالك المنصة') : t('لوحة إدارة المستخدمين')}
+        </h1>
+        {isOwner && (
+          <button onClick={testEmail} disabled={emailBusy}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold border hover:bg-slate-50 disabled:opacity-60"
+            style={{ borderColor:'#E5E7EF', color:'#475569' }}>
+            <Mail size={14}/> {emailBusy ? t('جارٍ...') : t('اختبار البريد')}
+          </button>
+        )}
+      </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
